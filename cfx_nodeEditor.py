@@ -134,6 +134,8 @@ class Node(QtGui.QGraphicsItem):
     def __init__(self, graphWidget):
         QtGui.QGraphicsItem.__init__(self)
 
+        self.UID = graphWidget.getUID()
+        
         self.graph = graphWidget
         self.edgeList = []
         self.newPos = QtCore.QPointF()
@@ -175,7 +177,7 @@ class Node(QtGui.QGraphicsItem):
         if self.newPos == self.pos():
             return False
 
-        self.setPos(self.newPos)
+        #self.setPos(self.newPos)
         return True
 
     def boundingRect(self):
@@ -216,18 +218,40 @@ class Node(QtGui.QGraphicsItem):
 
     def isInFrame(self):
         inany = False
+        prevparent = self.frameparent
         for frame in self.graph.nodes:
-            if frame.isFrame:
+            if (frame.isFrame) and (self != frame):
                 minx = frame.pos().x() - frame.width + self.width
-                miny = -frame.height + self.height
-                maxx = frame.width - self.width
-                maxy = frame.height - frame.barheight - self.height
-                if (self.pos().x() > minx) and (self.pos().x() < maxx):
-                    if (self.pos().y() > miny) and (self.pos().y() < maxy):
+                miny = frame.pos().y() - frame.height + self.height - frame.barheight
+                maxx = frame.pos().x() + frame.width - self.width
+                maxy = frame.pos().y() + frame.height - self.height
+                if (self.pos().x() >= minx) and (self.pos().x() <= maxx):
+                    if (self.pos().y() >= miny) and (self.pos().y() <= maxy):
                         inany = True
-                        frame.addChild(self)
                         self.frameparent = frame
-                        print("New Parent")
+        #moved into frame from no frame
+        if (prevparent == None) and (self.frameparent != None):
+            self.frameparent.addChild(self)
+        #If moved outside frame
+        if not inany:
+            if prevparent:
+                for child in prevparent.children:
+                    if child[0] == self:
+                        prevparent.children.remove(child)
+                    self.frameparent = None
+        #If moved within same frame
+        if (prevparent != None) and (self.frameparent != None):
+            if (prevparent.UID == self.frameparent.UID):
+                fpc = self.frameparent.children
+                for child in range(len(fpc)):
+                    if fpc[child][0] == self:
+                        fpc[child] = (fpc[child][0], self.pos() - self.frameparent.pos())
+        #Moved to new frame
+            elif (not (prevparent.UID == self.frameparent.UID)):
+                for child in prevparent.children:
+                    if child[0] == self:
+                        prevparent.children.remove(child)
+                        self.frameparent.addChild(self)
                 
     def mousePressEvent(self, event):
         self.update()
@@ -271,9 +295,7 @@ class MotionNode(Node):
 
 class MotionFrame(MotionNode):
     def __init__(self, graphWidget):
-
         self.children = []
-
         MotionNode.__init__(self, graphWidget)
         self.colour = QtCore.Qt.darkCyan
 
@@ -349,6 +371,17 @@ class CfxEditor(QtGui.QGraphicsView):
         self.setMinimumSize(800, 500)
         self.setWindowTitle(self.tr("cfx_editor"))
 
+    def getUID(self):
+        UID = 0
+        current = []
+        for node in self.nodes:
+            current.append(node.UID)
+        while True:
+            if UID in current:
+                UID +=1
+            else:
+                return UID
+
     def addNode(self, nodeType):
         item = nodeType(self)
         self.nodes.append(item)
@@ -367,7 +400,7 @@ class CfxEditor(QtGui.QGraphicsView):
             while (node < len(self.nodes)) and cont:
                 if self.nodes[node].selected:
                     edge = len(self.edges)-1
-                    while (edge>=0):
+                    while edge >= 0:
                         if self.edges[edge] in self.nodes[node].edges():
                             self.scene.removeItem(self.edges[edge])
                             del self.edges[edge]
@@ -382,14 +415,15 @@ class CfxEditor(QtGui.QGraphicsView):
 
     def timerEvent(self, event):
         for node in self.nodes:
-            node.calculateForces()
+            #node.calculateForces()
+            node.advance()
 
-        itemsMoved = False
+        itemsmoved = False
         for node in self.nodes:
             if node.advance():
-                itemsMoved = True
+                itemsmoved = True
 
-        if not itemsMoved:
+        if not itemsmoved:
             self.killTimer(self.timerId)
             self.timerId = 0
 
@@ -422,6 +456,55 @@ class CfxEditor(QtGui.QGraphicsView):
         ed = Edge(toNode, fromNode)
         self.edges.append(ed)
         self.scene.addItem(ed)
+
+    def resetGraph(self):
+        for item in self.nodes+self.edges:
+            self.scene.removeItem(item)
+        self.nodes = []
+        self.edges = []
+
+    def save(self):
+        tosave = {"nodes": {}, "edges": []}
+        typest = ""
+        for node in self.nodes:
+            for types in NODETYPES:
+                if types[1] == node.__class__:
+                    typest = types[0]
+            tosave["nodes"][node.UID] = {
+                "UID": node.UID,
+                "type": typest,
+                "posx": node.pos().x(),
+                "posy": node.pos().y(),
+                "frameparent": node.frameparent.UID if node.frameparent else None
+            }
+        for edge in self.edges:
+            tosave["edges"].append({
+                "source": edge.source.UID,
+                "dest": edge.dest.UID
+            })
+        return tosave
+
+    def load(self, toload):
+        self.resetGraph()
+        toparent = []
+        for node in toload["nodes"]:
+            item = [x[1] for x in NODETYPES if x[0] == toload["nodes"][node]["type"]][0](self)
+            item.UID = toload["nodes"][node]["UID"]
+            item.setPos(toload["nodes"][node]["posx"], toload["nodes"][node]["posy"])
+            if toload["nodes"][node]["frameparent"] != None:
+                toparent.append( (item, toload["nodes"][node]["frameparent"]) )
+            self.nodes.append(item)
+            self.scene.addItem(item)
+
+        for parent in toparent:
+            frame = [x for x in self.nodes if x.UID == parent[1]]
+            if len(frame) > 0:
+                frame[0].addChild(parent[0])
+                parent[0].frameparent = frame[0]
+
+        for edge in toload["edges"]:
+            self.addEdge([x for x in self.nodes if x.UID == edge["dest"]][0], [x for x in self.nodes if x.UID == edge["source"]][0])
+
 
 # If this file isn't being imported do the following...
 if __name__ == "__main__":

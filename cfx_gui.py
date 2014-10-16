@@ -40,14 +40,14 @@ class main(QtGui.QWidget):
         QtGui.QWidget.__init__(self)
         hbox = QtGui.QHBoxLayout(self)
 
-        top = CfxEditor()
-        middle = NodeList(top)
-        bottom = Properties()
+        self.CfxEditor = CfxEditor()
+        middle = NodeList(self.CfxEditor)
+        self.properties = Properties()
 
         splitter = QtGui.QSplitter(QtCore.Qt.Vertical)
-        splitter.addWidget(top)
+        splitter.addWidget(self.CfxEditor)
         splitter.addWidget(middle)
-        splitter.addWidget(bottom)
+        splitter.addWidget(self.properties)
 
         hbox.addWidget(splitter)
         self.setLayout(hbox)
@@ -55,19 +55,53 @@ class main(QtGui.QWidget):
         QtGui.QApplication.setStyle(QtGui.QStyleFactory.create("plastique"))
 
         self.setGeometry(300, 300, 300, 200)
-        self.setWindowTitle('QtGui.QSplitter')
-        self.show()
+        #self.setWindowTitle('QtGui.QSplitter')
+        #self.show()
 
     def onChanged(self, text):
         self.lbl.setText(text)
         self.lbl.adjustSize()
 
+class window(QtGui.QMainWindow):
+    def __init__(self):
+        QtGui.QMainWindow.__init__(self)
+
+        self.main = main()
+
+        exitAction = QtGui.QAction("&Exit", self)
+        exitAction.triggered.connect(self.close)
+
+        resetAction = QtGui.QAction("&Reset", self)
+        resetAction.triggered.connect(self.main.CfxEditor.resetGraph)
+
+        self.lastsaved = {}
+        saveAction = QtGui.QAction("&Save", self)
+
+        def savedmove(self, func):
+            self.lastsaved = func()
+            print(self.lastsaved)
+
+        saveAction.triggered.connect(lambda: savedmove(self, self.main.CfxEditor.save))
+
+        loadAction = QtGui.QAction("&Load last", self)
+        loadAction.triggered.connect(lambda: self.main.CfxEditor.load(self.lastsaved))
+
+        menubar = self.menuBar()
+        fileMenu = menubar.addMenu("&File")
+        fileMenu.addAction(exitAction)
+        fileMenu.addAction(resetAction)
+        fileMenu.addAction(saveAction)
+        fileMenu.addAction(loadAction)
+
+        self.setCentralWidget(self.main)
+
+        self.show()
 
 if __name__ == "__main__":
     app = QtGui.QApplication(sys.argv)
 
-    # widget = cfx_editor()
-    widget = main()
+    widget = window()
+    #widget = main()
     widget.show()
 
     sys.exit(app.exec_())
