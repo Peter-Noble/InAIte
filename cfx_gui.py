@@ -3,6 +3,7 @@ import math
 from PySide import QtCore, QtGui
 
 from cfx_nodeEditor import CfxEditor, NODETYPES
+from cfx_propertiesEditor import Properties
 
 
 class NodeButton(QtGui.QPushButton):
@@ -25,24 +26,15 @@ class NodeList(QtGui.QWidget):
         self.setFixedHeight(self.sizeHint().height())
 
 
-class Properties(QtGui.QWidget):
-    def __init__(self):
-        QtGui.QWidget.__init__(self)
-        self.lbl = QtGui.QLabel()
-        self.lbl.setText("This is where the properties will go")
-        self.box = QtGui.QHBoxLayout()
-        self.box.addWidget(self.lbl)
-        self.setLayout(self.box)
-
-
 class main(QtGui.QWidget):
     def __init__(self):
         QtGui.QWidget.__init__(self)
         hbox = QtGui.QHBoxLayout(self)
 
-        self.CfxEditor = CfxEditor()
-        middle = NodeList(self.CfxEditor)
+
         self.properties = Properties()
+        self.CfxEditor = CfxEditor(self.properties.newSelected)
+        middle = NodeList(self.CfxEditor)
 
         splitter = QtGui.QSplitter(QtCore.Qt.Vertical)
         splitter.addWidget(self.CfxEditor)

@@ -1,6 +1,7 @@
 import sys
 import math
 from PySide import QtCore, QtGui
+import collections
 
 
 class Edge(QtGui.QGraphicsItem):
@@ -134,8 +135,10 @@ class Node(QtGui.QGraphicsItem):
     def __init__(self, graphWidget):
         QtGui.QGraphicsItem.__init__(self)
 
+        self.UpdateSelected = graphWidget.UpdateSelected
+
         self.UID = graphWidget.getUID()
-        
+
         self.graph = graphWidget
         self.edgeList = []
         self.newPos = QtCore.QPointF()
@@ -154,6 +157,12 @@ class Node(QtGui.QGraphicsItem):
 
         self.colour = QtCore.Qt.darkGreen
 
+        self.settings = collections.OrderedDict()
+        self.settings["Display Name"] = "Node"
+        self.settings["int"] = 1
+        self.settings["float"] = 1.0
+        self.settings["text"] = "Text"
+
     def type(self):
         return Node.Type
 
@@ -163,15 +172,6 @@ class Node(QtGui.QGraphicsItem):
 
     def edges(self):
         return self.edgeList
-
-    def calculateForces(self):
-        if not self.scene() or self.scene().mouseGrabberItem() is self:
-            self.newPos = self.pos()
-            return None
-
-        #SceneRect = self.scene().sceneRect()
-        #self.newPos = self.pos()
-
 
     def advance(self):
         if self.newPos == self.pos():
@@ -204,7 +204,14 @@ class Node(QtGui.QGraphicsItem):
             painter.setPen(QtGui.QPen(painter.pen().color().darker(), 4))
 
         painter.setBrush(QtGui.QBrush(self.colour))
-        painter.drawRect(-self.width, -self.height, 2 * self.width, 2 * self.height)
+        backgroundRect = QtCore.QRect(-self.width, -self.height, 2 * self.width, 2 * self.height)
+        painter.drawRect(backgroundRect)
+
+        # TODO set the colour of text so that it is actually readable against the colour of the node
+        painter.setPen(QtGui.QPen(QtCore.Qt.black, 1))
+        text = QtGui.QFont("Arial", 8, QtGui.QFont.Bold)
+        painter.setFont(text)
+        painter.drawText(backgroundRect, QtCore.Qt.AlignCenter, self.settings["Display Name"])
 
     def itemChange(self, change, value):
         for edge in self.edgeList:
@@ -270,6 +277,7 @@ class Node(QtGui.QGraphicsItem):
                     sel = False
             if sel:
                 self.selected = not self.selected
+            self.UpdateSelected(self if self.selected else None)
         if event.button() == QtCore.Qt.MouseButton.LeftButton:
             self.isInFrame()
 
@@ -289,8 +297,8 @@ class LogicNode(Node):
 
 class MotionNode(Node):
     def __init__(self, graphWidget):
-       Node.__init__(self, graphWidget)
-       self.colour = QtCore.Qt.blue
+        Node.__init__(self, graphWidget)
+        self.colour = QtCore.Qt.blue
 
 
 class MotionFrame(MotionNode):
@@ -319,6 +327,11 @@ class MotionFrame(MotionNode):
         painter.setBrush(QtGui.QBrush(QtCore.Qt.blue))
         painter.drawRect(-self.width, -(self.height - self.barheight), 2 * self.width, -self.barheight)
 
+        painter.setPen(QtGui.QPen(QtCore.Qt.black, 1))
+        text = QtGui.QFont("Arial", 8, QtGui.QFont.Bold)
+        painter.setFont(text)
+        painter.drawText(QtCore.QRect(-self.width, -(self.height - self.barheight), 2 * self.width, -self.barheight), QtCore.Qt.AlignCenter, self.settings["Display Name"])
+
     def addChild(self, child):
         self.children.append( [child, child.pos() - self.pos()] )
                             #child, relative position
@@ -333,18 +346,22 @@ class MotionFrame(MotionNode):
 
 NODETYPES = [
     #(NAME STRING ,NODECLASS),
-    ("LogicNode"  ,LogicNode),
-    ("MotionNode" ,MotionNode),
-    ("MotionFrame",MotionFrame)
+    ("LogicNode", LogicNode),
+    ("MotionNode", MotionNode),
+    ("MotionFrame", MotionFrame)
 ]#LogicNode,MotionNode,MotionFrame and LogicFrame should all be invisible by completion
+
+# TODO replace this with a collections.OrderedDict()
 
 
 class CfxEditor(QtGui.QGraphicsView):
     nodes = []
     edges = []
 
-    def __init__(self):
+    def __init__(self, UpdateSelected):
         QtGui.QGraphicsView.__init__(self)
+
+        self.UpdateSelected = UpdateSelected;
 
         self.timerId = 0
 
@@ -415,7 +432,6 @@ class CfxEditor(QtGui.QGraphicsView):
 
     def timerEvent(self, event):
         for node in self.nodes:
-            #node.calculateForces()
             node.advance()
 
         itemsmoved = False
@@ -451,7 +467,7 @@ class CfxEditor(QtGui.QGraphicsView):
             if issubclass(toNode.__class__, LogicNode):
                 return None
             for e in self.edges:
-                if fromNode==e.source and toNode==e.dest:
+                if fromNode==e.dest and toNode==e.source:
                     return None
         ed = Edge(toNode, fromNode)
         self.edges.append(ed)
@@ -463,6 +479,8 @@ class CfxEditor(QtGui.QGraphicsView):
         self.nodes = []
         self.edges = []
 
+
+    # TODO node settings aren't saved or loaded
     def save(self):
         tosave = {"nodes": {}, "edges": []}
         typest = ""
@@ -510,7 +528,7 @@ class CfxEditor(QtGui.QGraphicsView):
 if __name__ == "__main__":
     app = QtGui.QApplication(sys.argv)
 
-    widget = CfxEditor()
+    widget = CfxEditor(lambda x: print("Not connected"))
     widget.show()
 
     sys.exit(app.exec_())
