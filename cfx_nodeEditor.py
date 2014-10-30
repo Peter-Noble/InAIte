@@ -2,6 +2,7 @@ import sys
 import math
 from PySide import QtCore, QtGui
 import collections
+from cfx_nodeFunctions import logictypes, animationtypes
 
 
 class Edge(QtGui.QGraphicsItem):
@@ -158,13 +159,8 @@ class Node(QtGui.QGraphicsItem):
         self.colour = QtCore.Qt.darkGreen
 
         self.settings = collections.OrderedDict()
-        self.settings["Display Name"] = "Node"
-        self.settings["int"] = 1
-        self.settings["float"] = 1.0
-        self.settings["text"] = "Text"
 
-    def type(self):
-        return Node.Type
+        self.displayname = "Node"
 
     def addEdge(self, edge):
         self.edgeList.append(edge)
@@ -211,7 +207,7 @@ class Node(QtGui.QGraphicsItem):
         painter.setPen(QtGui.QPen(QtCore.Qt.black, 1))
         text = QtGui.QFont("Arial", 8, QtGui.QFont.Bold)
         painter.setFont(text)
-        painter.drawText(backgroundRect, QtCore.Qt.AlignCenter, self.settings["Display Name"])
+        painter.drawText(backgroundRect, QtCore.Qt.AlignCenter, self.displayname)
 
     def itemChange(self, change, value):
         for edge in self.edgeList:
@@ -292,13 +288,16 @@ class Node(QtGui.QGraphicsItem):
 
 
 class LogicNode(Node):
-    pass
+    def __init__(self, graphWidget):
+        self.category = ("AND", [x for x in logictypes])
+        Node.__init__(self, graphWidget)
 
 
 class MotionNode(Node):
     def __init__(self, graphWidget):
         Node.__init__(self, graphWidget)
         self.colour = QtCore.Qt.blue
+        self.category = ("STD", [x for x in animationtypes])
 
 
 class MotionFrame(MotionNode):
@@ -330,7 +329,7 @@ class MotionFrame(MotionNode):
         painter.setPen(QtGui.QPen(QtCore.Qt.black, 1))
         text = QtGui.QFont("Arial", 8, QtGui.QFont.Bold)
         painter.setFont(text)
-        painter.drawText(QtCore.QRect(-self.width, -(self.height - self.barheight), 2 * self.width, -self.barheight), QtCore.Qt.AlignCenter, self.settings["Display Name"])
+        painter.drawText(QtCore.QRect(-self.width, -(self.height - self.barheight), 2 * self.width, -self.barheight), QtCore.Qt.AlignCenter, self.displayname)
 
     def addChild(self, child):
         self.children.append( [child, child.pos() - self.pos()] )
@@ -349,8 +348,8 @@ NODETYPES = [
     ("LogicNode", LogicNode),
     ("MotionNode", MotionNode),
     ("MotionFrame", MotionFrame)
-]#LogicNode,MotionNode,MotionFrame and LogicFrame should all be invisible by completion
-
+]
+#LogicNode,MotionNode,MotionFrame and LogicFrame should all be invisible by completion
 # TODO replace this with a collections.OrderedDict()
 
 
@@ -361,7 +360,7 @@ class CfxEditor(QtGui.QGraphicsView):
     def __init__(self, UpdateSelected):
         QtGui.QGraphicsView.__init__(self)
 
-        self.UpdateSelected = UpdateSelected;
+        self.UpdateSelected = UpdateSelected
 
         self.timerId = 0
 
@@ -426,7 +425,6 @@ class CfxEditor(QtGui.QGraphicsView):
                     del self.nodes[node]
                     cont = False
                 node += 1
-
         else:
             QtGui.QGraphicsView.keyPressEvent(self, event)
 
@@ -479,7 +477,6 @@ class CfxEditor(QtGui.QGraphicsView):
         self.nodes = []
         self.edges = []
 
-
     # TODO node settings aren't saved or loaded
     def save(self):
         tosave = {"nodes": {}, "edges": []}
@@ -493,7 +490,9 @@ class CfxEditor(QtGui.QGraphicsView):
                 "type": typest,
                 "posx": node.pos().x(),
                 "posy": node.pos().y(),
-                "frameparent": node.frameparent.UID if node.frameparent else None
+                "frameparent": node.frameparent.UID if node.frameparent else None,
+                "settings": node.settings,
+                "category": node.category
             }
         for edge in self.edges:
             tosave["edges"].append({
@@ -509,6 +508,8 @@ class CfxEditor(QtGui.QGraphicsView):
             item = [x[1] for x in NODETYPES if x[0] == toload["nodes"][node]["type"]][0](self)
             item.UID = toload["nodes"][node]["UID"]
             item.setPos(toload["nodes"][node]["posx"], toload["nodes"][node]["posy"])
+            item.settings = toload["nodes"][node]["settings"]
+            item.category = toload["nodes"][node]["category"]
             if toload["nodes"][node]["frameparent"] != None:
                 toparent.append( (item, toload["nodes"][node]["frameparent"]) )
             self.nodes.append(item)
