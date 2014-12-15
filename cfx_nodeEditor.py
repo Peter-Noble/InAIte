@@ -6,6 +6,7 @@ from cfx_nodeFunctions import logictypes, animationtypes
 
 
 class Edge(QtGui.QGraphicsItem):
+    """The GUI representation of connections between nodes drawn as arrows"""
     Pi = math.pi
     TwoPi = 2.0 * Pi
 
@@ -42,6 +43,7 @@ class Edge(QtGui.QGraphicsItem):
         self.adjust()
 
     def adjust(self):
+        """Recalculate the position of the arrow"""
         if not self.source or not self.dest:
             return
 
@@ -128,7 +130,7 @@ class Edge(QtGui.QGraphicsItem):
 
 
 class Node(QtGui.QGraphicsItem):
-    """The master class for all node classes"""
+    """The GUI representation of nodes drawn as coloured box. Contains settings used for properties"""
     Type = QtGui.QGraphicsItem.UserType + 1
     ZValue = -1
     isFrame = False
@@ -210,6 +212,7 @@ class Node(QtGui.QGraphicsItem):
         painter.drawText(backgroundRect, QtCore.Qt.AlignCenter, self.displayname)
 
     def itemChange(self, change, value):
+        # TODO please think about what this funcion is doing... twice
         for edge in self.edgeList:
             edge.adjust()
         if change == QtGui.QGraphicsItem.ItemPositionChange:
@@ -220,10 +223,12 @@ class Node(QtGui.QGraphicsItem):
         return QtGui.QGraphicsItem.itemChange(self, change, value)
 
     def isInFrame(self):
+        """Called when a node is dropped. Deals with adding the node to a frame"""
         inany = False
         prevparent = self.frameparent
+        #is the node within the area of a frame
         for frame in self.graph.nodes:
-            if (frame.isFrame) and (self != frame):
+            if frame.isFrame and (self != frame):
                 minx = frame.pos().x() - frame.width + self.width
                 miny = frame.pos().y() - frame.height + self.height - frame.barheight
                 maxx = frame.pos().x() + frame.width - self.width
@@ -232,6 +237,7 @@ class Node(QtGui.QGraphicsItem):
                     if (self.pos().y() >= miny) and (self.pos().y() <= maxy):
                         inany = True
                         self.frameparent = frame
+        # TODO sort out all these Nones
         #moved into frame from no frame
         if (prevparent == None) and (self.frameparent != None):
             self.frameparent.addChild(self)
@@ -277,9 +283,10 @@ class Node(QtGui.QGraphicsItem):
         if event.button() == QtCore.Qt.MouseButton.LeftButton:
             self.isInFrame()
 
-            def round_to(n, precision):
-                correction = 0.5 if n >= 0 else -0.5
-                return int( n/precision+correction ) * precision
+            #def round_to(n, precision):
+            #    correction = 0.5 if n >= 0 else -0.5
+            #
+            #     return int( n/precision+correction ) * precision
 
             #self.newPos.setX(round_to(self.newPos.x(), 1))
             #self.newPos.setY(round_to(self.newPos.x(), 1))
@@ -288,12 +295,14 @@ class Node(QtGui.QGraphicsItem):
 
 
 class LogicNode(Node):
+    """Nodes that control behavour"""
     def __init__(self, graphWidget):
         self.category = ("AND", [x for x in logictypes])
         Node.__init__(self, graphWidget)
 
 
 class MotionNode(Node):
+    """Nodes that represent an animation"""
     def __init__(self, graphWidget):
         Node.__init__(self, graphWidget)
         self.colour = QtCore.Qt.blue
@@ -301,6 +310,7 @@ class MotionNode(Node):
 
 
 class MotionFrame(MotionNode):
+    """Node that represents an animation and contains logic nodes that are only evaluated if animation is playing"""
     def __init__(self, graphWidget):
         self.children = []
         MotionNode.__init__(self, graphWidget)
@@ -336,6 +346,7 @@ class MotionFrame(MotionNode):
                             #child, relative position
 
     def itemChange(self, change, value):
+        """move the frame's children with it"""
         MotionNode.itemChange(self, change, value)
         for child in self.children:
             diff = self.pos() + child[1]
@@ -354,6 +365,7 @@ NODETYPES = [
 
 
 class CfxEditor(QtGui.QGraphicsView):
+    """The window in which the nodes and edges live"""
     nodes = []
     edges = []
 
@@ -375,13 +387,6 @@ class CfxEditor(QtGui.QGraphicsView):
 
         self.setBackgroundBrush(QtCore.Qt.lightGray)
         #self.setDragMode(QtGui.QGraphicsView.ScrollHandDrag)
-
-        #for n in range(10):
-        #    item = Node(self)
-        #    self.nodes.append(item)
-        #    self.scene.addItem(item)
-
-        #self.nodes[0].setPos(-50, -50)
 
         self.scale(0.8, 0.8)
         self.setMinimumSize(800, 500)
@@ -445,6 +450,7 @@ class CfxEditor(QtGui.QGraphicsView):
         self.scaleView(math.pow(2.0, +event.delta() / 240.0))
 
     def scaleView(self, scaleFactor):
+        # TODO this function needs sorting out... zooming isn't intuative at the moment
         factor = self.matrix().scale(scaleFactor, scaleFactor).mapRect(QtCore.QRectF(0, 0, 1, 1)).width()
 
         if factor < 0.5 or factor > 10:
@@ -477,7 +483,6 @@ class CfxEditor(QtGui.QGraphicsView):
         self.nodes = []
         self.edges = []
 
-    # TODO node settings aren't saved or loaded
     def save(self):
         tosave = {"nodes": {}, "edges": []}
         typest = ""
@@ -510,7 +515,7 @@ class CfxEditor(QtGui.QGraphicsView):
             item.setPos(toload["nodes"][node]["posx"], toload["nodes"][node]["posy"])
             item.settings = toload["nodes"][node]["settings"]
             item.category = toload["nodes"][node]["category"]
-            if toload["nodes"][node]["frameparent"] != None:
+            if toload["nodes"][node]["frameparent"]:
                 toparent.append( (item, toload["nodes"][node]["frameparent"]) )
             self.nodes.append(item)
             self.scene.addItem(item)

@@ -9,14 +9,18 @@ from cfx_propertiesEditor import Properties
 
 
 class NodeButton(QtGui.QPushButton):
+    """The button class for adding new nodes"""
+
     def __init__(self, editor, target):
         QtGui.QPushButton.__init__(self)
         self.editor = editor
         self.setText(target[0])
         self.clicked.connect(lambda: self.editor.addNode(target[1]))
-        
+
 
 class NodeList(QtGui.QWidget):
+    """The list of buttons for adding new nodes"""
+
     def __init__(self, editor):
         QtGui.QWidget.__init__(self)
         self.editor = editor
@@ -29,10 +33,11 @@ class NodeList(QtGui.QWidget):
 
 
 class main(QtGui.QWidget):
+    """Contains everything that is shown in the main part of the window"""
+
     def __init__(self):
         QtGui.QWidget.__init__(self)
         hbox = QtGui.QHBoxLayout(self)
-
 
         self.properties = Properties()
         self.CfxEditor = CfxEditor(self.properties.newSelected)
@@ -49,7 +54,7 @@ class main(QtGui.QWidget):
         # noinspection PyTypeChecker
         QtGui.QApplication.setStyle(QtGui.QStyleFactory.create("plastique"))
 
-        #self.setWindowTitle('QtGui.QSplitter')
+        # self.setWindowTitle('QtGui.QSplitter')
         #self.show()
 
     def onChanged(self, text):
@@ -58,41 +63,48 @@ class main(QtGui.QWidget):
 
 
 class window(QtGui.QMainWindow):
+    """The window that is displayed. Contains the menues and their functionality"""
+
     def __init__(self):
         QtGui.QMainWindow.__init__(self)
 
         self.main = main()
-        
-        self.saveslots = {}
-        self.current = None #index of the currently open tree
+
+        self.saveslots = {"test": """{'nodes': {0: {'type': 'LogicNode', 'UID': 0, 'posx': 76.25,
+        'settings': OrderedDict(),'category': ('PRINT', ['AND', 'OR', 'PYTHON', 'PRINT', 'MAP', 'OUTPUT']),
+         'frameparent': None, 'posy': -6.25}, 1: {'type': 'LogicNode', 'UID': 1, 'posx': -157.5,
+          'settings': OrderedDict([('Expression', '1')]), 'category': ('PYTHON', ['AND', 'OR', 'PYTHON',
+           'PRINT', 'MAP', 'OUTPUT']), 'frameparent': None, 'posy': -1.25}}, 'edges': [{'source': 0, 'dest': 1}]}"""}
+        self.current = None  # index of the currently open tree
 
         self.setGeometry(1000, 100, 300, 200)
 
-        def saveas(self, func):
-            saveto = QtGui.QInputDialog.getText(self, "Save to", "Name")[0]
+        def saveas(win, func):
+            saveto = QtGui.QInputDialog.getText(win, "Save to", "Name")[0]
             savedata = func()
-            self.saveslots[saveto] = savedata.__str__()
-            self.lastsaved = savedata
-            self.current = saveto
-    
-        def savedmove(self, func):
-            if self.current:
-                self.saveslots[self.current] = func().__str__()
+            win.saveslots[saveto] = savedata.__str__()
+            win.lastsaved = savedata
+            win.current = saveto
+            print(savedata)
+
+        def savedmove(win, func):
+            if win.current:
+                win.saveslots[win.current] = func().__str__()
             else:
-                saveas(self, func)
+                saveas(win, func)
 
-        def loadfrom(self):
-            loadfrom, use = QtGui.QInputDialog.getItem(self, "Load from", "From", list(self.saveslots.keys()))
-            self.main.CfxEditor.load(eval(self.saveslots[loadfrom]))
-            self.current = loadfrom
+        def loadfrom(win):
+            loadfromname, use = QtGui.QInputDialog.getItem(win, "Load from", "From", list(win.saveslots.keys()))
+            win.main.CfxEditor.load(eval(win.saveslots[loadfromname]))
+            win.current = loadfromname
 
-        def reset(self):
-            self.main.CfxEditor.resetGraph()
-            self.current = None
+        def reset(win):
+            win.main.CfxEditor.resetGraph()
+            win.current = None
 
-        def executebrain(self):
-            loadfrom, use = QtGui.QInputDialog.getItem(self, "Load from", "From", list(self.saveslots.keys()))
-            compilebrain(self.saveslots[loadfrom]).execute()
+        def executebrain(win):  # ONLY TEMPORY until the Blender plugin can do this for itself
+            loadfromname, use = QtGui.QInputDialog.getItem(win, "Load from", "From", list(win.saveslots.keys()))
+            compilebrain(win.saveslots[loadfromname]).execute()
 
         exitAction = QtGui.QAction("&Exit", self)
         exitAction.triggered.connect(self.close)
@@ -101,7 +113,7 @@ class window(QtGui.QMainWindow):
         resetAction.triggered.connect(lambda: reset(self))
 
         saveAction = QtGui.QAction("&Save", self)
-                
+
         saveAction.triggered.connect(lambda: savedmove(self, self.main.CfxEditor.save))
 
         saveasaction = QtGui.QAction("&Save as", self)
@@ -125,6 +137,7 @@ class window(QtGui.QMainWindow):
         self.setCentralWidget(self.main)
 
         self.show()
+
 
 if __name__ == "__main__":
     app = QtGui.QApplication(sys.argv)

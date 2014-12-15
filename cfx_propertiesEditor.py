@@ -26,7 +26,6 @@ class Properties(QtGui.QWidget):
         self.setMinimumSize(800, 200)
 
     def updateProp(self, selected, key, val):
-        print("Updating", selected, key, val)
         selected.settings[key] = val
         selected.update()
 
@@ -41,10 +40,13 @@ class Properties(QtGui.QWidget):
         self.newSelected(selected)
         selected.update()
 
+    def updateTuple(self, selected, key, totype):
+        selected.settings[key] = (selected.settings[key][1][totype], selected.settings[key][1])
+        selected.update()
+
     def newSelected(self, selected):
         self.clearLayout(self.propbox)
         if selected:
-            print(selected,hex(id(selected.settings)))
 
             row = QtGui.QHBoxLayout()
             row.addWidget(QtGui.QLabel("Display Name"))
@@ -86,7 +88,7 @@ class Properties(QtGui.QWidget):
                     item = QtGui.QComboBox()
                     item.addItems(val[1])
                     item.setCurrentIndex(item.findText(val[0]))
-                    #connect
+                    item.currentIndexChanged.connect(functools.partial(self.updateTuple, selected, prop))
                     row.addWidget(item)
                 self.propbox.addLayout(row)
 
