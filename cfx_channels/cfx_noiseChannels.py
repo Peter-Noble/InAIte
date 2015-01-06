@@ -1,9 +1,9 @@
-import bpy
-from cfx_masterChannels import MasterChannel as MC
+#import bpy
+from cfx_channels.cfx_masterChannels import MasterChannel as Mc
 import random
 
 
-class Noise(MC):
+class Noise(Mc):
     """Used to generate randomness in a scene"""
     @property
     def random(self):

@@ -2,6 +2,7 @@ import sys
 import math
 from PySide import QtCore, QtGui
 import collections
+from copy import deepcopy
 from cfx_nodeFunctions import logictypes, animationtypes
 
 
@@ -484,12 +485,17 @@ class CfxEditor(QtGui.QGraphicsView):
         self.edges = []
 
     def save(self):
+        """Turn the node graph into a string"""
         tosave = {"nodes": {}, "edges": []}
         typest = ""
         for node in self.nodes:
             for types in NODETYPES:
                 if types[1] == node.__class__:
                     typest = types[0]
+            settings = deepcopy(node.settings)
+            for s in settings:
+                if isinstance(settings[s], str):
+                    settings[s] = settings[s].replace("\n", "{NEWLINE}")
             tosave["nodes"][node.UID] = {
                 "UID": node.UID,
                 "type": typest,
@@ -497,7 +503,8 @@ class CfxEditor(QtGui.QGraphicsView):
                 "posy": node.pos().y(),
                 "frameparent": node.frameparent.UID if node.frameparent else None,
                 "settings": node.settings,
-                "category": node.category
+                "category": node.category,
+                "displayname": node.displayname
             }
         for edge in self.edges:
             tosave["edges"].append({
@@ -511,9 +518,14 @@ class CfxEditor(QtGui.QGraphicsView):
         toparent = []
         for node in toload["nodes"]:
             item = [x[1] for x in NODETYPES if x[0] == toload["nodes"][node]["type"]][0](self)
+            item.colour = logictypes[toload["nodes"][node]["category"][0]].colour
             item.UID = toload["nodes"][node]["UID"]
             item.setPos(toload["nodes"][node]["posx"], toload["nodes"][node]["posy"])
             item.settings = toload["nodes"][node]["settings"]
+            item.displayname = toload["nodes"][node]["displayname"]
+            for set in item.settings:
+                if isinstance(item.settings[set], str):
+                    item.settings[set] = item.settings[set].replace("{NEWLINE}", "\n")
             item.category = toload["nodes"][node]["category"]
             if toload["nodes"][node]["frameparent"]:
                 toparent.append( (item, toload["nodes"][node]["frameparent"]) )

@@ -44,4 +44,9 @@ ehthumbs.db
 Thumbs.db
 
 # Backups #
+###########
 2014-12-16 - Backup/
+
+# Blender files #
+#################
+*.blend1

@@ -7,6 +7,9 @@ from cfx_compileBrain import compilebrain
 from cfx_nodeEditor import CfxEditor, NODETYPES
 from cfx_propertiesEditor import Properties
 
+import threading
+from multiprocessing import Process
+
 
 class NodeButton(QtGui.QPushButton):
     """The button class for adding new nodes"""
@@ -62,19 +65,19 @@ class main(QtGui.QWidget):
         self.lbl.adjustSize()
 
 
-class window(QtGui.QMainWindow):
+class Window(QtGui.QMainWindow):
     """The window that is displayed. Contains the menues and their functionality"""
 
-    def __init__(self):
+    def __init__(self, updatesaves):
         QtGui.QMainWindow.__init__(self)
 
         self.main = main()
 
-        self.saveslots = {"test": """{'nodes': {0: {'type': 'LogicNode', 'UID': 0, 'posx': 76.25,
-        'settings': OrderedDict(),'category': ('PRINT', ['AND', 'OR', 'PYTHON', 'PRINT', 'MAP', 'OUTPUT']),
-         'frameparent': None, 'posy': -6.25}, 1: {'type': 'LogicNode', 'UID': 1, 'posx': -157.5,
-          'settings': OrderedDict([('Expression', '1')]), 'category': ('PYTHON', ['AND', 'OR', 'PYTHON',
-           'PRINT', 'MAP', 'OUTPUT']), 'frameparent': None, 'posy': -1.25}}, 'edges': [{'source': 0, 'dest': 1}]}"""}
+        self.updatesaves = updatesaves
+
+        self.saveslots = {'NNone': "{'edges': [], 'nodes': {}}"}
+        #self.saveslots = {}
+        
         self.current = None  # index of the currently open tree
 
         self.setGeometry(1000, 100, 300, 200)
@@ -85,8 +88,14 @@ class window(QtGui.QMainWindow):
             win.saveslots[saveto] = savedata.__str__()
             win.lastsaved = savedata
             win.current = saveto
-            print(savedata)
-
+            #print(savedata.__str__().replace("\n", "{NEWLINE}"))
+            """assemble the save data and send it back to blender"""
+            saves = []
+            for item in self.saveslots:
+                saves.append((item[0], item[1:], self.saveslots[item]))
+            saves = tuple(saves)
+            self.updatesaves(saves)
+            
         def savedmove(win, func):
             if win.current:
                 win.saveslots[win.current] = func().__str__()
@@ -104,7 +113,8 @@ class window(QtGui.QMainWindow):
 
         def executebrain(win):  # ONLY TEMPORY until the Blender plugin can do this for itself
             loadfromname, use = QtGui.QInputDialog.getItem(win, "Load from", "From", list(win.saveslots.keys()))
-            compilebrain(win.saveslots[loadfromname]).execute()
+            compilebrain(win.saveslots[loadfromname]).execute("RANDOM USER ID")
+            #  TODO replace the RANDOM USER ID with something that actualy works
 
         exitAction = QtGui.QAction("&Exit", self)
         exitAction.triggered.connect(self.close)
@@ -139,10 +149,16 @@ class window(QtGui.QMainWindow):
         self.show()
 
 
-if __name__ == "__main__":
-    app = QtGui.QApplication(sys.argv)
+def runui(updatesaves):
+    app = QtGui.QApplication.instance()
+    if not app:
+        app = QtGui.QApplication([])
 
-    widget = window()
+    widget = Window(updatesaves)
     widget.show()
 
-    sys.exit(app.exec_())
+    #sys.exit(app.exec_())
+
+
+if __name__ == "__main__":
+    runui()

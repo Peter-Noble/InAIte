@@ -1,8 +1,8 @@
-import bpy
-from cfx_masterChannels import MasterChannel as MC
+#import bpy
+from cfx_channels.cfx_masterChannels import MasterChannel as Mc
 
 
-class World(MC):
+class World(Mc):
     """Used to access other data from the scene"""
     @property
     def time(self):

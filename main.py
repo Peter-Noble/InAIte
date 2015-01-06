@@ -3,35 +3,61 @@ import random
 from bpy.props import IntProperty, EnumProperty, CollectionProperty, PointerProperty, BoolProperty, StringProperty
 from bpy.types import PropertyGroup, UIList, Panel, Operator
 
+import sys
+sys.path.append(r'''C:\Users\Peter\Documents\Hills road\Computing\A2\COMP4\CrowdFX''')
+
+from cfx_simulate import Simulation
+from cfx_gui import runui
+
+bl_info = {
+	"name": "CFX",
+	"description": "Simulate crowds of agents in Blender!",
+	"author": "Peter Noble",
+	"version": (1,0),
+	"blender": (2,73,0),
+	"location": "Properties > Scene",
+	"category": "Development"
+}
 
 #=============== DATA START===============#
 
-#This will eventually contain references to the brain objects
-#When this needs updating append to this list and then call the setCfx... functions
-cfx_brains = (
-            ('N', "None", ""),
-            ('A', "Option A", ""),  
-            ('B', "Option B", ""),
-            ('G', "Ground", "")
-            )
-#The data structure for the agent entries
+cfx_brains = []
+
+def loadbrains():
+    """loads the brains from the .blend or creates them if they don't already exist"""
+    global cfx_brains
+    if "cfx_brains" not in bpy.context.scene:
+        bpy.types.Scene.cfx_brains = [
+            ('N', 'None', "{'edges': [], 'nodes': {}}"),
+            ('J', 'test', "{'nodes': {0: {'displayname': 'Node', 'posx': -155.0, 'type': 'LogicNode', 'category': ('PYTHON', ['AND', 'OR', 'PYTHON', 'PRINT', 'MAP', 'OUTPUT', 'INPUT']), 'UID': 0, 'frameparent': None, 'settings': OrderedDict([('Expression', {'value': 'output = Noise.random/10', 'type': 'MLEdit'})]), 'posy': -110.0}, 1: {'displayname': 'Node', 'posx': 21.25, 'type': 'LogicNode', 'category': ('OUTPUT', ['AND', 'OR', 'PYTHON', 'PRINT', 'MAP', 'OUTPUT', 'INPUT']), 'UID': 1, 'frameparent': None, 'settings': OrderedDict([('Output', ('rz', ('rx', 'ry', 'rz', 'px', 'py', 'pz'))), ('Multi input type', ('Average', ('Average', 'Max')))]), 'posy': -107.5}, 2: {'displayname': 'Node', 'posx': 56.25, 'type': 'LogicNode', 'category': ('OUTPUT', ['AND', 'OR', 'PYTHON', 'PRINT', 'MAP', 'OUTPUT', 'INPUT']), 'UID': 2, 'frameparent': None, 'settings': OrderedDict([('Output', ('py', ('rx', 'ry', 'rz', 'px', 'py', 'pz'))), ('Multi input type', ('Average', ('Average', 'Max')))]), 'posy': 70.0}, 3: {'displayname': 'Node', 'posx': -156.25, 'type': 'LogicNode', 'category': ('PYTHON', ['AND', 'OR', 'PYTHON', 'PRINT', 'MAP', 'OUTPUT', 'INPUT']), 'UID': 3, 'frameparent': None, 'settings': OrderedDict([('Expression', {'value': 'output = 0.05', 'type': 'MLEdit'})]), 'posy': 65.0}}, 'edges': [{'source': 1, 'dest': 0}, {'source': 2, 'dest': 3}]}")
+            ]
+    cfx_brains = bpy.context.scene.cfx_brains
+    print("Loaded brains", cfx_brains)
+
+def cfx_brains_callback(scene, context):
+    """Very useful for debugging purposes"""
+    #print("Getting brains", cfx_brains)
+    return cfx_brains
+
 def updateagents(self, context):
     bpy.ops.scene.cfx_groups_populate()
     bpy.ops.scene.cfx_selected_populate()
 
 class agent_entry(PropertyGroup):
+    """The data structure for the agent entries"""
     type = EnumProperty(
-        items=(cfx_brains),
+        items=cfx_brains_callback,
         update=updateagents
     )
     group = IntProperty(update=updateagents)
 
-#cfx_agents, cfx_agents_selected
 class agents_collection(PropertyGroup):
+    """cfx_agents, cfx_agents_selected"""
     coll = CollectionProperty(type=agent_entry)
     index = IntProperty()
 
 class default_agents_type(PropertyGroup):
+    """Properties that define how new objects will be assigned groups"""
     startType = EnumProperty(
         items = (
             ('Next','Next Free',''),
@@ -46,22 +72,22 @@ class default_agents_type(PropertyGroup):
     )
     setno = IntProperty(min=1)
 
-#register cfx_agents type with blender
 def setCfxAgents():
+    """register cfx_agents type with blender"""
     bpy.types.Scene.cfx_agents = PointerProperty(type=agents_collection)
     bpy.types.Scene.cfx_agents_selected = PointerProperty(type=agents_collection)
     bpy.types.Scene.cfx_agents_default = PointerProperty(type=default_agents_type)
 
-#callback for changing the type of one of the groups
 def GroupChange(self, context):
+    """callback for changing the type of one of the groups"""
     for agent in bpy.context.scene.cfx_agents.coll:
         if str(agent.group) == self.name:
             agent.type = self.type
 
-#The data structure for the group entries
 class group_entry(PropertyGroup):
+    """The data structure for the group entries"""
     type = EnumProperty (
-        items = (cfx_brains),
+        items = cfx_brains_callback,
         update = GroupChange
     )
     group = IntProperty(min=0)
@@ -70,14 +96,32 @@ class groups_collection(PropertyGroup):
     coll = CollectionProperty(type=group_entry)
     index = IntProperty()
 
-#register cfx_groups type with blender
 def setCfxGroups():
+    """register cfx_groups type with blender"""
     bpy.types.Scene.cfx_groups = PointerProperty(type=groups_collection)
 
+def update_cfx_brains(brains):
+    """passed to the GUI so that it can update the brain types"""
+    import subprocess
+    def copy2clip(txt):
+       cmd='echo '+txt.strip()+'|clip'
+       return subprocess.check_call(cmd, shell=True)
+    
+    copy2clip(str(brains))
 
+    global cfx_brains
+    cfx_brains = [('N', 'None', "{'edges': [], 'nodes': {}}")]
+    for bb in brains:
+        cfx_brains.append(bb)
+    setAllTypes()
+    for g in bpy.context.scene.cfx_groups.coll:
+        if g.type not in [x[0] for x in cfx_brains]:
+            g.type = cfx_brains[0][1]
+            print(g, g.type)
+    print([x[0] for x in cfx_brains])
 
-#register all types
 def setAllTypes():
+    """register all types"""
     setCfxGroups()
     setCfxAgents()
     
@@ -122,9 +166,7 @@ class SCENE_OT_group_populate(Operator):
                 item.type = 'N'
         return {'FINISHED'}
     
-   #needs list clean up adding
-
-
+   # TODO  needs list clean up adding
 
 
 class SCENE_OT_group_remove(Operator):
@@ -199,16 +241,13 @@ class SCENE_OT_cfx_agents_populate(Operator):
             else:
                 i+=1
             
-    
     def execute(self, context):
         ag = [x.name for x in bpy.context.scene.cfx_agents.coll]
-        
         
         if bpy.context.scene.cfx_agents_default.startType=="Next":
             group = self.findNext()
         else:
             group = bpy.context.scene.cfx_agents_default.setno
-        
         
         for i in bpy.context.selected_objects:
             if i.name not in ag:
@@ -221,6 +260,7 @@ class SCENE_OT_cfx_agents_populate(Operator):
                     else:
                         bpy.context.scene.cfx_agents_default.setno+=1
                         group = bpy.context.scene.cfx_agents_default.setno
+                print("cfx", cfx_brains)
                 item.type = 'N'
         bpy.ops.scene.cfx_groups_populate()
         return {'FINISHED'}
@@ -293,17 +333,40 @@ class SCENE_OT_cfx_selected_populate(Operator):
         self.group_selected = bpy.context.scene.cfx_agents_selected
         self.group_selected.coll.clear()
         
-        print("start")
-        
         for i in bpy.context.scene.cfx_agents.coll:
             if self.group.index<len(self.group.coll):
                 if i.group==int(self.group.coll[self.group.index].name):
                     item = context.scene.cfx_agents_selected.coll.add()
                     item.name = i.name
-                    print(i.name)
         return {'FINISHED'}
     
 #=============== SELECTED LIST END ===============#
+
+#=============== SIMULATION START ===============#
+
+
+class SCENE_OT_cfx_startui(Operator):
+    bl_idname = "scene.cfx_startui"
+    bl_label = "start UI"
+    
+    def execute(self, context):
+        runui(update_cfx_brains)
+        return {'FINISHED'}
+
+
+class SCENE_OT_cfx_start(Operator):
+    bl_idname = "scene.cfx_start"
+    bl_label = "Start simulation"
+    
+    def execute(self, context):
+        sim = Simulation()
+        for ag in bpy.context.scene.cfx_agents.coll:
+            sim.newagent(ag.name)
+        sim.startframehandler()
+        return {'FINISHED'}
+
+#=============== SIMULATION END ===============#
+
 
 class SCENE_PT_crowdfx(Panel):
     """Creates CrowdFX Panel in the scene properties window"""
@@ -339,7 +402,6 @@ class SCENE_PT_crowdfx(Panel):
         
         #####
         
-        
         layout.label(text="All agents:")
         row = layout.row()
         row.template_list("SCENE_UL_agents", "", sce.cfx_agents, "coll", sce.cfx_agents, "index")
@@ -363,10 +425,14 @@ class SCENE_PT_crowdfx(Panel):
         
         row = layout.row()
         row.prop(default, "contType", expand=True)
+        
+        row = layout.row()
+        row.operator(SCENE_OT_cfx_startui.bl_idname)
+        row.operator(SCENE_OT_cfx_start.bl_idname)
 
 def register():
     bpy.utils.register_module(__name__)#I think this registers the SCENE_PT_crowdfx class... or maybe all the classes in the file?
-    #PointerProperty can be reassigned during execution
+    loadbrains()
     setAllTypes()
 
 def unregister():
@@ -378,7 +444,3 @@ def unregister():
 
 if __name__ == "__main__":
     register()
-
-
-
-

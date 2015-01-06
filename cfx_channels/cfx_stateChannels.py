@@ -1,7 +1,7 @@
-import bpy
-from cfx_masterChannels import MasterChannel as MC
+#import bpy
+from cfx_channels.cfx_masterChannels import MasterChannel as Mc
 
 
-class State(MC):
+class State(Mc):
     """Used for accessing the data of the current agent"""
     pass

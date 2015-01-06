@@ -13,8 +13,12 @@ def compilebrain(toloadtext):
         if toload["nodes"][nodeUID]["type"] == "LogicNode":
             item = logictypes[toload["nodes"][nodeUID]["category"][0]](result)
         else:
-            item = animationtypes[toload["nodes"][nodeUID]["category"][0]](result)
+            item = animationtypes[toload["nodes"][nodeUID]["category"][0]](results)
         item.parent = toload["nodes"][nodeUID]["frameparent"]
+        settings = toload["nodes"][nodeUID]["settings"]
+        for s in settings:
+            if isinstance(settings[s], str):
+                settings[s] = settings[s].replace("{NEWLINE}", "\n")
         item.settings = toload["nodes"][nodeUID]["settings"]
         result.neurons[nodeUID] = item
     #add the edges to the connections

@@ -29,12 +29,17 @@ class Properties(QtGui.QWidget):
         selected.settings[key] = val
         selected.update()
 
+    def updatetextedit(self, selected, key, textedit):
+        selected.settings[key]["value"] = textedit.toPlainText()
+        selected.update()
+
     def updateDisplayName(self, selected, name):
         selected.displayname = name
         selected.update()
 
     def updateType(self, selected, item, totype):
         nametotype = item.itemText(totype)
+        selected.colour = logictypes[nametotype].colour
         selected.category = (nametotype, selected.category[1])
         selected.settings = copy.deepcopy(logictypes[nametotype].settings)
         self.newSelected(selected)
@@ -90,6 +95,12 @@ class Properties(QtGui.QWidget):
                     item.setCurrentIndex(item.findText(val[0]))
                     item.currentIndexChanged.connect(functools.partial(self.updateTuple, selected, prop))
                     row.addWidget(item)
+                elif isinstance(val, dict):
+                    if val["type"] == "MLEdit":
+                        item = QtGui.QTextEdit()
+                        item.setText(val["value"])
+                        item.textChanged.connect(functools.partial(self.updatetextedit, selected, prop, item))
+                        row.addWidget(item)
                 self.propbox.addLayout(row)
 
     def clearLayout(self, layout):
