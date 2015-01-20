@@ -24,9 +24,3 @@ class Interpreter(code.InteractiveConsole):
             return self.locals["output"]
         else:
             print("Script must have out output")
-
-
-if __name__ == "__main__":
-    console = Interpreter()
-    console.enter("a = 1\noutput = a + 1")
-    print(console.getoutput())

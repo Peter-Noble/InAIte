@@ -58,7 +58,7 @@ class main(QtGui.QWidget):
         QtGui.QApplication.setStyle(QtGui.QStyleFactory.create("plastique"))
 
         # self.setWindowTitle('QtGui.QSplitter')
-        #self.show()
+        # self.show()
 
     def onChanged(self, text):
         self.lbl.setText(text)
@@ -66,18 +66,22 @@ class main(QtGui.QWidget):
 
 
 class Window(QtGui.QMainWindow):
-    """The window that is displayed. Contains the menues and their functionality"""
+    """The window that is displayed. Contains the menues and their
+    functionality"""
 
-    def __init__(self, updatesaves):
+    def __init__(self, updatesaves, loadbrains):
         QtGui.QMainWindow.__init__(self)
 
         self.main = main()
 
         self.updatesaves = updatesaves
 
-        self.saveslots = {'NNone': "{'edges': [], 'nodes': {}}"}
-        #self.saveslots = {}
-        
+        # self.saveslots = {'NNone': "{'edges': [], 'nodes': {}}"}
+        # self.saveslots = {}
+        self.saveslots = {}
+        for b in loadbrains:
+            self.saveslots[b.identify+b.dispname] = b.brain
+
         self.current = None  # index of the currently open tree
 
         self.setGeometry(1000, 100, 300, 200)
@@ -88,14 +92,14 @@ class Window(QtGui.QMainWindow):
             win.saveslots[saveto] = savedata.__str__()
             win.lastsaved = savedata
             win.current = saveto
-            #print(savedata.__str__().replace("\n", "{NEWLINE}"))
+            # print(savedata.__str__().replace("\n", "{NEWLINE}"))
             """assemble the save data and send it back to blender"""
             saves = []
             for item in self.saveslots:
                 saves.append((item[0], item[1:], self.saveslots[item]))
             saves = tuple(saves)
             self.updatesaves(saves)
-            
+
         def savedmove(win, func):
             if win.current:
                 win.saveslots[win.current] = func().__str__()
@@ -103,18 +107,22 @@ class Window(QtGui.QMainWindow):
                 saveas(win, func)
 
         def loadfrom(win):
-            loadfromname, use = QtGui.QInputDialog.getItem(win, "Load from", "From", list(win.saveslots.keys()))
-            win.main.CfxEditor.load(eval(win.saveslots[loadfromname]))
-            win.current = loadfromname
+            loadn, use = QtGui.QInputDialog.getItem(win, "Load from",
+                                                    "From",
+                                                    list(win.saveslots.keys()))
+            win.main.CfxEditor.load(eval(win.saveslots[loadn]))
+            win.current = loadn
 
         def reset(win):
             win.main.CfxEditor.resetGraph()
             win.current = None
 
-        def executebrain(win):  # ONLY TEMPORY until the Blender plugin can do this for itself
-            loadfromname, use = QtGui.QInputDialog.getItem(win, "Load from", "From", list(win.saveslots.keys()))
-            compilebrain(win.saveslots[loadfromname]).execute("RANDOM USER ID")
-            #  TODO replace the RANDOM USER ID with something that actualy works
+        def executebrain(win):
+            # ONLY TEMPORY until the Blender plugin can do this for itself
+            loadn, use = QtGui.QInputDialog.getItem(win, "Load from", "From",
+                                                    list(win.saveslots.keys()))
+            compilebrain(win.saveslots[loadn]).execute("RANDOM USER ID")
+            #  TODO replace the RANDOM USER ID with something that works
 
         exitAction = QtGui.QAction("&Exit", self)
         exitAction.triggered.connect(self.close)
@@ -124,10 +132,12 @@ class Window(QtGui.QMainWindow):
 
         saveAction = QtGui.QAction("&Save", self)
 
-        saveAction.triggered.connect(lambda: savedmove(self, self.main.CfxEditor.save))
+        saveAction.triggered.connect(lambda:
+                                     savedmove(self, self.main.CfxEditor.save))
 
         saveasaction = QtGui.QAction("&Save as", self)
-        saveasaction.triggered.connect(lambda: saveas(self, self.main.CfxEditor.save))
+        saveasaction.triggered.connect(lambda:
+                                       saveas(self, self.main.CfxEditor.save))
 
         loadfromaction = QtGui.QAction("&Load from", self)
         loadfromaction.triggered.connect(lambda: loadfrom(self))
@@ -149,15 +159,15 @@ class Window(QtGui.QMainWindow):
         self.show()
 
 
-def runui(updatesaves):
+def runui(updatesaves, cfx_brains):
     app = QtGui.QApplication.instance()
     if not app:
         app = QtGui.QApplication([])
 
-    widget = Window(updatesaves)
+    widget = Window(updatesaves, cfx_brains)
     widget.show()
 
-    #sys.exit(app.exec_())
+    # sys.exit(app.exec_())
 
 
 if __name__ == "__main__":

@@ -3,30 +3,31 @@ from collections import OrderedDict
 from cfx_brainClasses import Neuron, Brain
 
 
-def compilebrain(toloadtext):
-    """Take the string that node graphs are saved to and turn in into a brain object"""
+def compilebrain(toloadtext, type, sim):
+    """Take the string and turn in into a brain object"""
     toload = eval(toloadtext)
-    result = Brain()
+    result = Brain(type, sim)
     into = []
-    #create the connections from the node
+    """create the connections from the node"""
     for nodeUID in toload["nodes"]:
-        if toload["nodes"][nodeUID]["type"] == "LogicNode":
-            item = logictypes[toload["nodes"][nodeUID]["category"][0]](result)
+        lono = toload["nodes"][nodeUID]
+        if lono["type"] == "LogicNode":
+            item = logictypes[lono["category"][0]](result)
         else:
-            item = animationtypes[toload["nodes"][nodeUID]["category"][0]](results)
-        item.parent = toload["nodes"][nodeUID]["frameparent"]
-        settings = toload["nodes"][nodeUID]["settings"]
+            item = animationtypes[lono["category"][0]](results)
+        item.parent = lono["frameparent"]
+        settings = lono["settings"]
         for s in settings:
             if isinstance(settings[s], str):
                 settings[s] = settings[s].replace("{NEWLINE}", "\n")
-        item.settings = toload["nodes"][nodeUID]["settings"]
+        item.settings = lono["settings"]
         result.neurons[nodeUID] = item
-    #add the edges to the connections
+    # add the edges to the connections
     for edge in toload["edges"]:
         into.append(edge["dest"])
         result.neurons[edge["source"]].inputs.append(edge["dest"])
-    #find the neurons that are going to start being evaulated
+    # find the neurons that are going to start being evaulated
     for nodeUID in toload["nodes"]:
-        if toload["nodes"][nodeUID]["type"] == "LogicNode" and (nodeUID not in into):
+        if lono["type"] == "LogicNode" and (nodeUID not in into):
             result.outputs.append(nodeUID)
     return result
