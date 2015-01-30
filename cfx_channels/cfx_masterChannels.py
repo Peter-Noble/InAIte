@@ -24,7 +24,6 @@ class MasterChannel:
         self.userid = userid
         self.randstate = hash(userid) + bpy.context.scene.frame_current
         random.seed(self.randstate)
-        self.newframe()
 
 
 class Wrapper:

@@ -3,7 +3,7 @@ import math
 from PySide import QtCore, QtGui
 import collections
 from copy import deepcopy
-from cfx_nodeFunctions import logictypes, animationtypes
+from cfx_nodeFunctions import logictypes, statetypes
 
 
 class Edge(QtGui.QGraphicsItem):
@@ -174,11 +174,15 @@ class Node(QtGui.QGraphicsItem):
         self.width = 64  # actual width = 2*self.width = 128
         self.height = 32  # actual height = 2*self.height = 64
 
-        self.colour = QtCore.Qt.darkGreen
+        # self.colour = QtGui.QColor(QtCore.Qt.darkGreen)
 
-        self.settings = collections.OrderedDict()
-
-        self.displayname = "Node"
+        # self.settings = collections.OrderedDict()
+        if self.logicormotion == "logic":
+            self.settings = logictypes[self.category[0]].settings
+            self.displayname = "Logic"
+        else:
+            self.settings = statetypes[self.category[0]].settings
+            self.displayname = "Motion"
 
     def addEdge(self, edge):
         self.edgeList.append(edge)
@@ -223,9 +227,14 @@ class Node(QtGui.QGraphicsItem):
                                       2 * self.width, 2 * self.height)
         painter.drawRect(backgroundRect)
 
-        # TODO set the colour of text so that it is actually readable against
-        # the colour of the node
-        painter.setPen(QtGui.QPen(QtCore.Qt.black, 1))
+        col = self.colour
+        brightness = col.red()*0.299 + col.green()*0.587 + col.blue()*0.114
+        if brightness > 105:
+            textcol = QtGui.QColor(0, 0, 0)
+        else:
+            textcol = QtGui.QColor(255, 255, 255)
+
+        painter.setPen(QtGui.QPen(textcol, 1))
         text = QtGui.QFont("Arial", 8, QtGui.QFont.Bold)
         painter.setFont(text)
         painter.drawText(backgroundRect, QtCore.Qt.AlignCenter,
@@ -305,21 +314,30 @@ class Node(QtGui.QGraphicsItem):
             self.UpdateSelected(self if self.selected else None)
         if event.button() == QtCore.Qt.MouseButton.LeftButton:
             self.isInFrame()
+            Rect = self.graph.scene.itemsBoundingRect()
+            Rect.setBottom(max(Rect.bottom(), 200))
+            Rect.setTop(min(Rect.top(), -200))
+            Rect.setLeft(min(Rect.left(), -200))
+            Rect.setRight(max(Rect.right(), 200))
+            self.graph.scene.setSceneRect(Rect)
 
 
 class LogicNode(Node):
     """Nodes that control behavour"""
     def __init__(self, graphWidget):
         self.category = ("AND", [x for x in logictypes])
+        self.logicormotion = "logic"
+        # TODO make the default setting available somewhere better than this
         Node.__init__(self, graphWidget)
 
 
 class MotionNode(Node):
     """Nodes that represent an animation"""
     def __init__(self, graphWidget):
+        # self.colour = QtCore.Qt.blue
+        self.category = ("STD", [x for x in statetypes])
+        self.logicormotion = "motion"
         Node.__init__(self, graphWidget)
-        self.colour = QtCore.Qt.blue
-        self.category = ("STD", [x for x in animationtypes])
 
 
 class MotionFrame(MotionNode):
@@ -406,8 +424,11 @@ class CfxEditor(QtGui.QGraphicsView):
         # self.setDragMode(QtGui.QGraphicsView.ScrollHandDrag)
 
         self.scale(0.8, 0.8)
-        self.setMinimumSize(800, 500)
+        self.setMinimumSize(800, 450)
         self.setWindowTitle(self.tr("cfx_editor"))
+
+        self.modifiers = None
+        self.viewCenter = QtCore.QPointF(0, 0)
 
     def getUID(self):
         UID = 0
@@ -422,6 +443,11 @@ class CfxEditor(QtGui.QGraphicsView):
 
     def addNode(self, nodeType):
         item = nodeType(self)
+        cat = item.category[0]
+        if cat in logictypes:
+            item.colour = logictypes[cat].colour
+        elif cat in statetypes:
+            item.colour = statetypes[cat].colour
         self.nodes.append(item)
         self.scene.addItem(item)
 
@@ -430,7 +456,10 @@ class CfxEditor(QtGui.QGraphicsView):
             self.timerId = self.startTimer(1000 / 25)
 
     def keyPressEvent(self, event):
+        """Keyboard shortcuts for when in the main editor window"""
         key = event.key()
+
+        self.modifiers = QtGui.QApplication.keyboardModifiers()
 
         if key == QtCore.Qt.Key_Delete:
             cont = True
@@ -450,6 +479,10 @@ class CfxEditor(QtGui.QGraphicsView):
         else:
             QtGui.QGraphicsView.keyPressEvent(self, event)
 
+    def keyReleaseEvent(self, event):
+        self.modifiers = QtGui.QApplication.keyboardModifiers()
+        QtGui.QGraphicsView.keyReleaseEvent(self, event)
+
     def timerEvent(self, event):
         for node in self.nodes:
             node.advance()
@@ -464,14 +497,33 @@ class CfxEditor(QtGui.QGraphicsView):
             self.timerId = 0
 
     def wheelEvent(self, event):
-        self.scaleView(math.pow(2.0, +event.delta() / 240.0))
+        """Zooming in and out"""
+        if self.modifiers == QtCore.Qt.ControlModifier:
+            self.scaleView(math.pow(2.0, +event.delta() / 240.0))
+        elif self.modifiers == QtCore.Qt.ShiftModifier:
+            self.viewCenter += QtCore.QPointF(-event.delta() / 2, 0)
+            self.centerOn(self.viewCenter)
+        else:
+            self.viewCenter += QtCore.QPointF(0, -event.delta() / 2)
+            self.centerOn(self.viewCenter)
+        re = self.sceneRect()
+        if self.viewCenter.y() > re.bottom() - (self.height() / 2):
+            self.viewCenter.setY(re.bottom() - (self.height() / 2))
+        elif self.viewCenter.y() < re.top() + (self.height() / 2):
+            self.viewCenter.setY(re.top() + (self.height() / 2))
+        if self.viewCenter.x() > re.right() - (self.width() / 2):
+            self.viewCenter.setX(re.right() - (self.width() / 2))
+        elif self.viewCenter.x() < re.left() + (self.width() / 2):
+            self.viewCenter.setX(re.left() + (self.width() / 2))
 
     def scaleView(self, scaleFactor):
-        # TODO this function needs sorting out. Zooming is weird at the moment
         factor = self.matrix().scale(scaleFactor, scaleFactor)
         factor = factor.mapRect(QtCore.QRectF(0, 0, 1, 1)).width()
 
-        if factor < 0.5 or factor > 10:
+        # heightsmaller = factor * self.sceneRect().y() < self.height()
+        # widthsmaller = factor * self.sceneRect().x() < self.width()
+        # if (heightsmaller and widthsmaller) or factor > 5:
+        if factor < 0.2 or factor > 5:
             return
 
         self.scale(scaleFactor, scaleFactor)
@@ -532,6 +584,7 @@ class CfxEditor(QtGui.QGraphicsView):
         return tosave
 
     def load(self, toload):
+        """Load from the text saved in the blend"""
         self.resetGraph()
         toparent = []
         for node in toload["nodes"]:
@@ -561,6 +614,8 @@ class CfxEditor(QtGui.QGraphicsView):
         for edge in toload["edges"]:
             self.addEdge([x for x in self.nodes if x.UID == edge["dest"]][0],
                          [x for x in self.nodes if x.UID == edge["source"]][0])
+        Rect = self.scene.itemsBoundingRect()
+        self.scene.setSceneRect(Rect)
 
 
 # If this file isn't being imported do the following...

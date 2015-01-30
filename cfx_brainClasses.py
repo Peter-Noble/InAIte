@@ -1,8 +1,6 @@
 import cfx_channels as chan
 import PySide
 
-PCol = PySide.QtCore.Qt.GlobalColor
-
 
 class Impulse():
     def __init__(self, tup):
@@ -64,9 +62,9 @@ class Neuron():
                 if got:
                     inps.append(got)
             im = self.core(inps, self.settings)
+            if not im:
+                im = {"None": 0}
             if isinstance(im, dict):
-                if not im:
-                    im = {"None": 0}
                 output = ImpulseContainer(im)
             elif isinstance(im, ImpulseContainer):
                 output = im
@@ -79,9 +77,95 @@ class Neuron():
         return self.active
 
 
+class State():
+    """The basic element of the state machine"""
+    def __init__(self, tree):
+        self.tree = tree
+        self.interupts = []
+        self.connected = []
+        self.default = None
+
+        self.interupt = False
+        self.start = False
+
+    def poll(self):
+        """If this state is a valid next move return float > 0"""
+        return 1.0
+
+    def evaluate(self):
+        connectedhard = []
+        connectedsoft = []
+        for coninterupt in self.interupts:
+            val = coninterupt.poll()
+            if val:
+                if interupt.settings["Hard interupt"]:
+                    connectedhard.append((coninterupt, val))
+                else:
+                    connectedsoft.append((coninterupt, val))
+        if len(connectedhard) > 0:
+            goto = max(connectedhard, key=lambda v: v[1])
+            return goto[0]
+        unconnectedhard = []
+        unconnectedsoft = []
+        for interupt in self.tree.interupts:
+            if interupt not in self.interupts:
+                val = coninterupt.poll()
+                if val:
+                    if interupt.settings["Hard interupt"]:
+                        unconnectedhard.append((coninterupt, val))
+                    else:
+                        unconnectedsoft.append((coninterupt, val))
+        if len(unconnectedhard) > 0:
+            goto = max(unconnectedhard, key=lambda v: v[1])
+            return goto[0]
+        # Stop at this point if animation is still going
+        # TODO this needs Blender code in here (or reference to it)
+
+        if len(connectedsoft) > 0:
+            goto = max(connectedsoft, key=lambda v: v[1])
+            return goto[0]
+
+        if len(unconnectedsoft) > 0:
+            goto = max(unconnectedsoft, key=lambda v: v[1])
+            return goto[0]
+
+        options = []
+        for con in self.connected:
+            val = con.poll()
+            if val:
+                options.append((con, val))
+        # TODO Finish this
+
+        # Check the brain output
+        # TODO How does the brain output this data?
+
+        # Default output
+        # TODO How do you store this information in a way the user can edit?
+
+        return
+
+        # Go back to START
+
+
+class StateTree():
+    """Contains all the states"""
+    def __init__(self):
+        self.interupts = []
+        self.states = []
+        self.current = None
+        self.start = None
+        """current and start will begin the same but current will change"""
+        self.brain = None  # Assigned when agent is compiled
+
+    def execute(self):
+        pass
+
+
 class Brain():
     """An executable brain object. Only one created per group it is used in"""
-    def __init__(self, type, sim):
+    def __init__(self, type, sim, tree):
+        self.tree = tree
+        self.tree.brain = self
         self.sim = sim
         self.type = type
         self.neurons = {}
@@ -102,15 +186,6 @@ class Brain():
         self.currentuser = userid
         self.reset()
         for name, var in self.lvars.items():
-            print("brainClasses", name)
             var.setuser(userid)
-        for agent in self.sim.agents.values():
-            for tag in agent.access["tags"]:
-                print("brainClasses", agent.id, tag)
-                for channel in self.lvars:
-                    if tag[:len(channel)] == channel:
-                        print("registering", agent.id)
-                        self.lvars[channel].register(agent, tag[len(channel):],
-                                                     agent.access["tags"][tag])
         for out in self.outputs:
             self.neurons[out].evaluate()

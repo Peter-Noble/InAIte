@@ -15,7 +15,6 @@ class Sound(Mc):
         self.channels = {}
 
     def register(self, agent, frequency, val):
-        print("registering new")
         if frequency in dir(self):
             print("""frequency must not be an attribute of this
                   python object""")
@@ -24,11 +23,14 @@ class Sound(Mc):
                 ch = Channel(frequency)
                 self.channels[frequency] = ch
             self.channels[frequency].register(agent.id, val)
-        print("Frequencies", [x.frequency for x in self.channels.values()])
 
     def retrieve(self, freq):
         """Dynamic properties"""
-        return self.channel[freq]
+        if freq in self.channels:
+            return self.channels[freq]
+        else:
+            return EmptyChannel()
+            # TODO this is really hacky...
 
     def newframe(self):
         self.channels = {}
@@ -37,6 +39,11 @@ class Sound(Mc):
         for chan in self.channels.values():
             chan.newuser(userid)
         Mc.setuser(self, userid)
+
+
+class EmptyChannel():
+    def __getattr__(self, attr):
+        return {"None": 0}
 
 
 class Channel:
@@ -61,28 +68,27 @@ class Channel:
 
     def calculate(self):
         ag = O[self.userid]
-        canhear = {}
         for emitterid, val in self.emitters.items():
-            to = O[emitterid]
+            if emitterid != self.userid:
+                to = O[emitterid]
 
-            difx = to.location.x - ag.location.x
-            dify = to.location.y - ag.location.y
-            difz = to.location.z - ag.location.z
-            dist = math.sqrt(difx**2 + dify**2 + difz**2)
-            if dist <= val:
-                target = to.location - ag.location
+                difx = to.location.x - ag.location.x
+                dify = to.location.y - ag.location.y
+                difz = to.location.z - ag.location.z
+                dist = math.sqrt(difx**2 + dify**2 + difz**2)
+                if dist <= val:
+                    target = to.location - ag.location
 
-                z = mathutils.Matrix.Rotation(ag.rotation_euler[2], 4, 'Z')
-                y = mathutils.Matrix.Rotation(ag.rotation_euler[1], 4, 'Y')
-                x = mathutils.Matrix.Rotation(ag.rotation_euler[0], 4, 'X')
+                    z = mathutils.Matrix.Rotation(ag.rotation_euler[2], 4, 'Z')
+                    y = mathutils.Matrix.Rotation(ag.rotation_euler[1], 4, 'Y')
+                    x = mathutils.Matrix.Rotation(ag.rotation_euler[0], 4, 'X')
 
-                rotation = x * y * z
-                relative = target * rotation
+                    rotation = x * y * z
+                    relative = target * rotation
 
-                changez = math.atan2(relative[0], relative[1])/math.pi
-                changex = math.atan2(relative[2], relative[1])/math.pi
-                canhear[emitterid] = (changez, changex, dist/val)
-        self.store = {}
+                    changez = math.atan2(relative[0], relative[1])/math.pi
+                    changex = math.atan2(relative[2], relative[1])/math.pi
+                    self.store[emitterid] = (changez, changex, 1-(dist/val))
 
     @property
     def rz(self):

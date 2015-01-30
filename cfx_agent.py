@@ -22,15 +22,15 @@ class Agent:
         "agent variables. Don't access from other agents"
 
         """ar - absolute rot, r - change rot by, rs - rot speed"""
-        self.arx = 0
+        self.arx = O[blenderid].rotation_euler[0]
         self.rx = 0
         self.rsx = 0
 
-        self.ary = 0
+        self.ary = O[blenderid].rotation_euler[1]
         self.ry = 0
         self.rsy = 0
 
-        self.arz = 0
+        self.arz = O[blenderid].rotation_euler[2]
         self.rz = 0
         self.rsz = 0
 

@@ -42,8 +42,17 @@ class Simulation():
                 self.agents[name] = ag
 
     def step(self, scene):
+        print("NEWFRAME")
+        for agent in self.agents.values():
+            for tag in agent.access["tags"]:
+                for channel in self.lvars:
+                    if tag[:len(channel)] == channel:
+                        self.lvars[channel].register(agent, tag[len(channel):],
+                                                     agent.access["tags"][tag])
         for a in self.agents.values():
             a.step()
+        for chan in self.lvars.values():
+            chan.newframe()
 
     def frame_change_handler(self, data):
         if self.framelast+1 == sce.frame_current:

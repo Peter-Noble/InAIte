@@ -4,47 +4,8 @@ from PySide import QtCore, QtGui
 import collections
 import functools
 import copy
-from cfx_nodeFunctions import logictypes, animationtypes
-
-
-class GraphWidget(QtGui.QWidget):
-    # TODO make this work!!!
-    def __init__(self):
-        QtGui.QWidget.__init__(self)
-        self.setMinimumSize(1, 30)
-
-    def paintEvent(self, e):
-        qp = QtGui.QPainter()
-        qp.begin(self)
-        font = QtGui.QFont('Serif', 7, QtGui.QFont.Light)
-        qp.setFont(font)
-
-        size = self.size()
-        w = size.width()
-        h = size.height()
-
-        till = int(((w / 750.0) * self.value))
-        full = int(((w / 750.0) * 700))
-
-        if self.value >= 700:
-            qp.setPen(QtGui.QColor(255, 255, 255))
-            qp.setBrush(QtGui.QColor(255, 255, 184))
-            qp.drawRect(0, 0, full, h)
-            qp.setPen(QtGui.QColor(255, 175, 175))
-            qp.setBrush(QtGui.QColor(255, 175, 175))
-            qp.drawRect(full, 0, till-full, h)
-        else:
-            qp.setPen(QtGui.QColor(255, 255, 255))
-            qp.setBrush(QtGui.QColor(255, 255, 184))
-            qp.drawRect(0, 0, till, h)
-
-        pen = QtGui.QPen(QtGui.QColor(20, 20, 20), 1,
-                         QtCore.Qt.SolidLine)
-
-        qp.setPen(pen)
-        qp.setBrush(QtCore.Qt.NoBrush)
-        qp.drawRect(0, 0, w-1, h-1)
-        qp.end()
+from cfx_nodeFunctions import logictypes, statetypes
+from cfx_graphWidget import GraphEditor
 
 
 class Properties(QtGui.QWidget):
@@ -69,6 +30,14 @@ class Properties(QtGui.QWidget):
         selected.settings[key] = val
         selected.update()
 
+    def updateBoolProp(self, selected, key, val):
+        selected.settings[key] = True if val == 2 else False
+        selected.update()
+
+    def updateGraphProp(self, selected, key, val):
+        selected.settings[key]["value"] = val
+        selected.update()
+
     def updatetextedit(self, selected, key, textedit):
         selected.settings[key]["value"] = textedit.toPlainText()
         selected.update()
@@ -79,9 +48,13 @@ class Properties(QtGui.QWidget):
 
     def updateType(self, selected, item, totype):
         nametotype = item.itemText(totype)
-        selected.colour = logictypes[nametotype].colour
+        if nametotype in logictypes:
+            selected.colour = logictypes[nametotype].colour
+            selected.settings = copy.deepcopy(logictypes[nametotype].settings)
+        elif nametotype in statetypes:
+            selected.colour = statetypes[nametotype].colour
+            selected.settings = copy.deepcopy(statetypes[nametotype].settings)
         selected.category = (nametotype, selected.category[1])
-        selected.settings = copy.deepcopy(logictypes[nametotype].settings)
         self.newSelected(selected)
         selected.update()
 
@@ -93,7 +66,6 @@ class Properties(QtGui.QWidget):
     def newSelected(self, selected):
         self.clearLayout(self.propbox)
         if selected:
-
             row = QtGui.QHBoxLayout()
             row.addWidget(QtGui.QLabel("Display Name"))
             item = QtGui.QLineEdit()
@@ -119,14 +91,22 @@ class Properties(QtGui.QWidget):
                 val = selected.settings[prop]
                 row = QtGui.QHBoxLayout()
                 row.addWidget(QtGui.QLabel(prop))
-                if isinstance(val, int):
+                if isinstance(val, bool):
+                    item = QtGui.QCheckBox()
+                    item.setCheckState(QtCore.Qt.CheckState(val*2))
+                    item.stateChanged.connect(partial(self.updateBoolProp,
+                                                      selected, prop))
+                    row.addWidget(item)
+                elif isinstance(val, int):
                     item = QtGui.QSpinBox()
+                    item.setRange(-99999, 99999)
                     item.setValue(val)
                     item.valueChanged.connect(partial(self.updateProp,
                                               selected, prop))
                     row.addWidget(item)
                 elif isinstance(val, float):
                     item = QtGui.QDoubleSpinBox()
+                    item.setRange(-99999, 99999)
                     item.setValue(val)
                     item.valueChanged.connect(partial(self.updateProp,
                                               selected, prop))
@@ -144,12 +124,6 @@ class Properties(QtGui.QWidget):
                     item.currentIndexChanged.connect(partial(self.updateTuple,
                                                              selected, prop))
                     row.addWidget(item)
-                elif isinstance(val, bool):
-                    item = QtGui.QCheckBox()
-                    item.setCheckState(val)
-                    item.stateChanged.connect(partial(self.updateProp,
-                                                      selected, prop))
-                    row.addWidget(item)
                 elif isinstance(val, dict):
                     """This is for special data types"""
                     if val["type"] == "MLEdit":
@@ -157,6 +131,17 @@ class Properties(QtGui.QWidget):
                         item.setText(val["value"])
                         item.textChanged.connect(partial(self.updatetextedit,
                                                          selected, prop, item))
+                        row.addWidget(item)
+                    if val["type"] == "Graph":
+                        item = GraphEditor()
+                        item.gw.setGraph(val["value"])
+                        item.gw.graphChanged.connect(partial(self.updateGraphProp,
+                                                          selected, prop, item)
+                                                  )
+                        # hbox = QtGui.QHBoxLayout()
+                        # hbox.addWidget(item)
+                        # hbox.insertSpacing(0, 100)
+                        # row.addLayout(hbox)
                         row.addWidget(item)
                 self.propbox.addLayout(row)
 
