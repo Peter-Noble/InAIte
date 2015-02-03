@@ -21,6 +21,7 @@ def processstring(toloadtext):
 
 def compilestatetree(toload):
     tree = StateTree()
+    ref = {}  # Temp storage for adding edges
     for nodeUID in toload["nodes"]:
         lono = toload["nodes"][nodeUID]
         item = statetypes[lono["category"][0]](tree)
@@ -35,11 +36,14 @@ def compilestatetree(toload):
             else:
                 tree.current = item
                 tree.start = item
-
         if item.interupt:
             tree.interupts.append(item)
         tree.states.append(item)
-        # TODO  FINISH!!!!!!!!!!!!!
+        ref[nodeUID] = item
+    for edge in toload["edges"]:
+        ref[edge["dest"]].connected.append(ref[edge["source"]])
+        if ref[edge["source"]].interupt:
+            reg[edge["dest"]].interupts.append(re[edge["source"]])
     return tree
 
 

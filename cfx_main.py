@@ -271,10 +271,21 @@ class SCENE_OT_cfx_start(Operator):
     bl_label = "Start simulation"
 
     def execute(self, context):
+        global sim
         sim = Simulation()
         for ag in bpy.context.scene.cfx_agents.coll:
             sim.newagent(ag.name)
         sim.startframehandler()
+        return {'FINISHED'}
+
+
+class SCENE_OT_cfx_stop(Operator):
+    bl_idname = "scene.cfx_stop"
+    bl_label = "Unregister the advance frame handler"
+
+    def execute(self, context):
+        global sim
+        sim.stopframehandler()
         return {'FINISHED'}
 
 # =============== SIMULATION END ===============#
@@ -348,6 +359,7 @@ class SCENE_PT_crowdfx(Panel):
         row = layout.row()
         row.operator(SCENE_OT_cfx_startui.bl_idname)
         row.operator(SCENE_OT_cfx_start.bl_idname)
+        row.operator(SCENE_OT_cfx_stop.bl_idname)
 
 
 def register():

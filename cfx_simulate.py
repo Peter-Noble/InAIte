@@ -5,7 +5,7 @@ sce = bpy.context.scene
 O = sce.objects
 
 import sys
-from cfx_compileBrain import compilebrain
+from cfx_compileBrain import compileagent
 
 import cfx_channels as chan
 wr = chan.Wrapper
@@ -32,13 +32,13 @@ class Simulation():
 
     def newagent(self, name):
         group = sce.cfx_agents.coll[name].group
-        type = sce.cfx_groups.coll[group-1].type
+        ty = sce.cfx_groups.coll[group-1].type
         for a in sce.cfx_brains:
-            if a.identify == type:
-                if type not in self.compbrains:
-                    cb = compilebrain(a.brain, a.dispname, self)
-                    self.compbrains[type] = cb
-                ag = Agent(name, self.compbrains[type])
+            if a.identify == ty:
+                if ty not in self.compbrains:
+                    cb = compileagent(a.brain, a.dispname, self)
+                    self.compbrains[ty] = cb
+                ag = Agent(name, self.compbrains[ty])
                 self.agents[name] = ag
 
     def step(self, scene):
@@ -60,5 +60,9 @@ class Simulation():
             self.lastframe = sce.frame_current
 
     def startframehandler(self):
-        bpy.app.handlers.frame_change_pre.clear()
+        if self.step in bpy.app.handlers.frame_change_pre:
+            bpy.app.handlers.frame_change_pre.remove(self.step)
         bpy.app.handlers.frame_change_pre.append(self.step)
+
+    def stopframehandler(self):
+        bpy.app.handlers.frame_change_pre.remove(self.step)

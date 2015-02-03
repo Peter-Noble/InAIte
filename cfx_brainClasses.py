@@ -1,5 +1,6 @@
 import cfx_channels as chan
 import PySide
+import random
 
 
 class Impulse():
@@ -36,7 +37,7 @@ class ImpulseContainer():
 
 
 class Neuron():
-    """The representation of the nodes"""
+    """The representation of the nodes. Not to be used on own"""
     def __init__(self, brain):
         self.brain = brain
         self.neurons = self.brain.neurons
@@ -78,21 +79,52 @@ class Neuron():
 
 
 class State():
-    """The basic element of the state machine"""
+    """The basic element of the state machine. Not to be used on own"""
     def __init__(self, tree):
         self.tree = tree
         self.interupts = []
         self.connected = []
-        self.default = None
 
         self.interupt = False
         self.start = False
+
+        self.currentframe = 0
+        self.length = 0
 
     def poll(self):
         """If this state is a valid next move return float > 0"""
         return 1.0
 
+    def moveto(self):
+        """Called when the current state moves to this node"""
+        self.currentframe = 0
+
     def evaluate(self):
+        """Return the state to move to (allowed to return itself)"""
+        def pickfromlist(options):
+            """options in form [(state, value)]"""
+            if len(options) == 1:
+                return options[0][0]
+            elif len(options) > 0:
+                """If there is more than one possible jump select one randomly
+                weighted by the value that polling them returned"""
+                so = sorted(options, key=lambda v: v[1])
+                final = [x for x in so if x[1] == so[0][1]]
+                if len(final) == 1:
+                    return final[0][0]
+                totals = []
+                running_total = 0
+
+                for w in final:
+                    running_total += w[1]
+                    totals.append(running_total)
+
+                rnd = random.random() * running_total
+                for i, total in enumerate(totals):
+                    if rnd < total:
+                        return final[i][0]
+
+        """Check if there are any connected interupts to jump to"""
         connectedhard = []
         connectedsoft = []
         for coninterupt in self.interupts:
@@ -103,8 +135,8 @@ class State():
                 else:
                     connectedsoft.append((coninterupt, val))
         if len(connectedhard) > 0:
-            goto = max(connectedhard, key=lambda v: v[1])
-            return goto[0]
+            return pickfromlist(connectedhard)
+        """Check if there are any unconnected interupts to jump to"""
         unconnectedhard = []
         unconnectedsoft = []
         for interupt in self.tree.interupts:
@@ -116,35 +148,31 @@ class State():
                     else:
                         unconnectedsoft.append((coninterupt, val))
         if len(unconnectedhard) > 0:
-            goto = max(unconnectedhard, key=lambda v: v[1])
-            return goto[0]
-        # Stop at this point if animation is still going
-        # TODO this needs Blender code in here (or reference to it)
+            return pickfromlist(unconnectedhard)
 
+        """Check to see if the current state is still playing an animation"""
+        if self.currentframe < self.length - self.settings["Fade out"]:
+            self.currentframe += 1
+            return self
+        # TODO Blender code needed in here to update the current frame
+
+        """Check to see if there are interupts to jump to that are soft"""
         if len(connectedsoft) > 0:
-            goto = max(connectedsoft, key=lambda v: v[1])
-            return goto[0]
+            return pickfromlist(unconnectedhard)
 
         if len(unconnectedsoft) > 0:
-            goto = max(unconnectedsoft, key=lambda v: v[1])
-            return goto[0]
+            return pickfromlist(unconnectedsoft)
 
+        """If the animation is finished and no interupts look at connections"""
         options = []
         for con in self.connected:
             val = con.poll()
             if val:
                 options.append((con, val))
-        # TODO Finish this
+        if len(options) > 0:
+            return pickfromlist(options)
 
-        # Check the brain output
-        # TODO How does the brain output this data?
-
-        # Default output
-        # TODO How do you store this information in a way the user can edit?
-
-        return
-
-        # Go back to START
+        return self.tree.start
 
 
 class StateTree():
@@ -158,6 +186,12 @@ class StateTree():
         self.brain = None  # Assigned when agent is compiled
 
     def execute(self):
+        cur = self.current.evaluate()
+        if self.current != cur:
+            cur.moveto()
+            self.current = cur
+            print("Moving into new state", cur.__class__.__name__)
+        # self.current = cur
         pass
 
 
@@ -189,3 +223,4 @@ class Brain():
             var.setuser(userid)
         for out in self.outputs:
             self.neurons[out].evaluate()
+        self.tree.execute()

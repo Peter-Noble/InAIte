@@ -590,7 +590,10 @@ class CfxEditor(QtGui.QGraphicsView):
         for node in toload["nodes"]:
             lono = toload["nodes"][node]  # lono = alias for current node
             item = [x[1] for x in NODETYPES if x[0] == lono["type"]][0](self)
-            item.colour = logictypes[lono["category"][0]].colour
+            if lono["type"] == "LogicNode":
+                item.colour = logictypes[lono["category"][0]].colour
+            else:
+                item.colour = statetypes[lono["category"][0]].colour
             item.UID = lono["UID"]
             item.setPos(lono["posx"], lono["posy"])
             item.settings = lono["settings"]

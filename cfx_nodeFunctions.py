@@ -181,6 +181,7 @@ class LogicSETTAG(Neuron):
     """If any of the inputs are above the Threshold level add or remove the
     Tag from the agents tags"""
     settings = OrderedDict([("Tag", "default"),
+                            ("Use threshold", True),
                             ("Threshold", 0.5),
                             ("Action", ("Add", ("Add", "Remove"))),
                             ("Value", 5)
@@ -189,11 +190,21 @@ class LogicSETTAG(Neuron):
 
     def core(self, inps, settings):
         condition = False
+        total = 0
+        count = 0
         for into in inps:
             for i in into:
                     if i.val > settings["Threshold"]:
                         condition = True
-        if condition:
+                    total += i.val
+                    count += 1
+        if settings["Use threshold"]:
+            if condition:
+                if settings["Action"][0] == "Add":
+                    self.brain.tags[settings["Tag"]] = settings["Value"]
+                else:
+                    del self.brain.tags[settings["Tag"]]
+        else:
             if settings["Action"][0] == "Add":
                 self.brain.tags[settings["Tag"]] = settings["Value"]
             else:
@@ -209,7 +220,7 @@ class LogicQUERYTAG(Neuron):
 
     def core(self, inps, settings):
         if settings["Tag"] in self.brain.tags:
-            return self.brains.tags[settings["Tag"]]
+            return self.brain.tags[settings["Tag"]]
         else:
             return 0
 
@@ -281,49 +292,88 @@ logictypes = OrderedDict([
 ])
 
 
+"""
+class State{NAME}(State):
+    settings = OrderedDict([("Fade in", 5),
+                            ("Fade out", 5)])
+    colour = QtGui.QColor(128, 128, 128)
+
+    def __ init__(self, tree):
+        State.__init__(self, tree)
+
+    def poll(self):
+        return 1
+"""
+
+
 class StateSTART(State):
-    settings = OrderedDict([("Default out", "default")])
+    """Points to the first state for the agent to be in"""
+    settings = OrderedDict([("Fade in", 5),
+                            ("Fade out", 5)])
 
     colour = QtGui.QColor(255, 255, 153)
 
-    start = True
+    def __init__(self, tree):
+        State.__init__(self, tree)
+        self.start = True
 
-    def core(self, settings):
-        pass
+    def poll(self):
+        return 0
 
 
 class StateSTD(State):
-    settings = OrderedDict([("Default out", "default")])
+    settings = OrderedDict([("Trigger", "default"),
+                            ("Fade in", 5),
+                            ("Fade out", 5)])
 
     colour = QtGui.QColor(0, 0, 0)
 
-    def core(self, settings):
-        pass
+    def __init__(self, tree):
+        State.__init__(self, tree)
+        self.length = 20  # TEMPORARY
+
+    def poll(self):
+        if self.settings["Trigger"] in self.tree.brain.tags:
+            return self.tree.brain.tags[self.settings["Trigger"]]
+        return 0
 
 
 class StateINTERUPT(State):
-    settings = OrderedDict([("Hard interupt", True),
-                            ("Default out", "default")])
+    """Jump from anywhere to this node if a condition is met"""
+    settings = OrderedDict([("Trigger", "default"),
+                            ("Theshold", 0.5),
+                            ("Fade in", 5),
+                            ("Fade out", 5),
+                            ("Hard interupt", True)])
 
     colour = QtGui.QColor(255, 51, 0)
 
-    interupt = True
+    def __init__(self, tree):
+        State.__init__(self, tree)
+        self.interupt = True
+        self.length = 10  # TEMPORARY
 
-    def core(self, settings):
-        pass
-
-    def evaluateinterupt(self):
-        """Called for all interupt nodes in the preprocessing step"""
-        pass
+    def poll(self):
+        if self.settings["Trigger"] in self.tree.brain.tags:
+            val = self.tree.brain.tags[self.settings["Trigger"]]
+            if val > self.settings["Theshold"]:
+                return val
+        return 0
 
 
 class StateTRANSITION(State):
-    settings = OrderedDict([("Default out", "default")])
+    """This node polls the node it's connected to and returns those results"""
+    settings = OrderedDict([("Fade in", 5),
+                            ("Fade out", 5)])
 
     colour = QtGui.QColor(255, 128, 0)
 
-    def core(self, settings):
-        pass
+    def __init__(self, tree):
+        State.__init__(self, tree)
+        self.length = 6  # TEMPORARY
+
+    def poll(self):
+        return self.connected[0].poll()
 
 
 statetypes = OrderedDict([
