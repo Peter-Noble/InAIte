@@ -1,6 +1,9 @@
 import bpy
 sce = bpy.context.scene
 
+from math import *
+from mathutils import *
+
 from cfx_channels.cfx_masterChannels import MasterChannel as Mc
 
 
@@ -61,21 +64,21 @@ class Ground(Mc):
             return location, normal
 
     def calcground(self):
-        # TODO  for each of the ground agents call self.calcindividualground
-        # and return closest
         grounds = []
-        for ag in sim.agents:
+        for ag in self.sim.agents.values():
             if "ground" in ag.access["tags"]:
                 grounds.append(sce.objects[ag.id])
         s = sce.objects[self.userid]
         results = []
         for g in grounds:
-            results.append(calcindividualground(s, g))
+            results.append(self.calcindividualground(s, g))
         if len(results) > 0:
+            """Get the result with the shortest distance to the ground"""
             output = results[0]
             for r in results[1:]:
                 if output[0]-s.location[2] < r[0][2]-s.location[2]:
                     output = r
+            print("Output", output)
             self.store["location"] = output[0]
             self.store["normal"] = output[1]
 
@@ -90,7 +93,7 @@ class Ground(Mc):
             zloc = sce.objects[self.userid].location[2]
             return self.store["location"][2] - zloc
         else:
-            return
+            return 0
         # TODO  put something sensible in here for when there in no ground
 
     @property

@@ -5,24 +5,19 @@ import collections
 import functools
 import copy
 from cfx_nodeFunctions import logictypes, statetypes
-from cfx_graphWidget import GraphEditor
+
+# from cfx_graphWidget import GraphEditor
+import imp
+import cfx_graphWidget
+imp.reload(cfx_graphWidget)
+GraphEditor = cfx_graphWidget.GraphEditor
 
 
 class Properties(QtGui.QWidget):
     def __init__(self):
         QtGui.QWidget.__init__(self)
-        self.box = QtGui.QVBoxLayout()
-
-        self.lbl = QtGui.QLabel()
-        self.lbl.setText("Properties:")
-        self.box.addWidget(self.lbl)
-
-        self.box.addSpacing(10)
-
         self.propbox = QtGui.QVBoxLayout()
-        self.box.addLayout(self.propbox)
-
-        self.setLayout(self.box)
+        self.setLayout(self.propbox)
 
         self.setMinimumSize(800, 200)
 
@@ -35,7 +30,9 @@ class Properties(QtGui.QWidget):
         selected.update()
 
     def updateGraphProp(self, selected, key, val):
-        selected.settings[key]["value"] = val
+        store = [(node.pos().x(), node.pos().y()) for node in val.gw.nodes]
+        results = (selected.settings[key]["value"][0], store)
+        selected.settings[key]["value"] = results
         selected.update()
 
     def updatetextedit(self, selected, key, textedit):
@@ -66,22 +63,36 @@ class Properties(QtGui.QWidget):
     def newSelected(self, selected):
         self.clearLayout(self.propbox)
         if selected:
+            height = 0
+            width = 0
             row = QtGui.QHBoxLayout()
-            row.addWidget(QtGui.QLabel("Display Name"))
+            lbl1 = QtGui.QLabel("Display Name")
+            height += lbl1.minimumHeight()
+            width = max(width, lbl1.minimumWidth())
+            row.addWidget(lbl1)
+
             item = QtGui.QLineEdit()
             item.setText(selected.displayname)
             item.textChanged.connect(functools.partial(self.updateDisplayName,
                                                        selected))
+            height += item.minimumHeight()
+            width = max(width, item.minimumWidth())
             row.addWidget(item)
             self.propbox.addLayout(row)
 
             row = QtGui.QHBoxLayout()
-            row.addWidget(QtGui.QLabel("Category"))
+            lbl2 = QtGui.QLabel("Category")
+            height += lbl2.minimumHeight()
+            width = max(width, lbl2.minimumWidth())
+            row.addWidget(lbl2)
+
             item = QtGui.QComboBox()
             item.addItems(selected.category[1])
             item.setCurrentIndex(item.findText(selected.category[0]))
             item.currentIndexChanged.connect(functools.partial(self.updateType,
                                              selected, item))
+            height += item.minimumHeight()
+            width = max(width, item.minimumWidth())
             row.addWidget(item)
             self.propbox.addLayout(row)
 
@@ -135,15 +146,16 @@ class Properties(QtGui.QWidget):
                     if val["type"] == "Graph":
                         item = GraphEditor()
                         item.gw.setGraph(val["value"])
-                        item.gw.graphChanged.connect(partial(self.updateGraphProp,
-                                                          selected, prop, item)
-                                                  )
-                        # hbox = QtGui.QHBoxLayout()
-                        # hbox.addWidget(item)
-                        # hbox.insertSpacing(0, 100)
-                        # row.addLayout(hbox)
+                        item.gw.graphChanged.connect(partial(
+                                                     self.updateGraphProp,
+                                                     selected, prop, item)
+                                                     )
                         row.addWidget(item)
+                height += item.minimumHeight()
+                width = max(width, item.minimumWidth())
                 self.propbox.addLayout(row)
+            self.propbox.addStretch()
+            self.setMinimumSize(width, height)
 
     def clearLayout(self, layout):
         while layout.count():

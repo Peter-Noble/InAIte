@@ -186,13 +186,12 @@ class StateTree():
         self.brain = None  # Assigned when agent is compiled
 
     def execute(self):
-        cur = self.current.evaluate()
-        if self.current != cur:
-            cur.moveto()
-            self.current = cur
-            print("Moving into new state", cur.__class__.__name__)
-        # self.current = cur
-        pass
+        if self.current:
+            cur = self.current.evaluate()
+            if self.current != cur:
+                cur.moveto()
+                self.current = cur
+                print("Moving into new state", cur.__class__.__name__)
 
 
 class Brain():

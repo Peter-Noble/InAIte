@@ -256,24 +256,58 @@ class LogicGRAPH(Neuron):
                                        }),
                             ("Lower range", -1.0),
                             ("Upper range", 1.0),
-                            ("Interpolation type", ("linear", ("linear")))
+                            ("Interpolation type", ("linear", ("linear",)))
                             ])
 
     colour = QtGui.QColor(204, 0, 102)
 
     def core(self, inps, settings):
-        def linear(value, points):
-            pass  # TODO  do some magic here
+        def linear(value):
+            li = settings["Lower range"]
+            ui = settings["Upper range"]
+            if value <= li:
+                num = li
+            elif value >= ui:
+                num = ui
+            else:
+                num = value
+            lo = 0
+            uo = 400
+            num = ((uo - lo) / (ui - li)) * (num - li) + lo
+            raw = settings["Graph"]["value"][1]
+            tmp = {}
+            for r in raw:
+                if r[0] in tmp:
+                    tmp[r[0]] = max(tmp[r[0]], 100 - r[1])
+                else:
+                    tmp[r[0]] = 100 - r[1]
+            vals = sorted(tmp.items(), key=lambda x: x[0])
+            c = 0
+            previous = vals[0]
+            while vals[c][0] < num:
+                previous = vals[c]
+                c += 1
+            current = vals[c]
+            if current is previous:
+                return current[1] / 100
+            through = num - previous[0]
+            ran = current[0] - previous[0]
+            comp1 = ((through/ran) * current[1])
+            comp2 = ((1 - through/ran) * previous[1])
+            res = comp1 + comp2
+            return res / 100
+
         if settings["Interpolation type"][0] == "linear":
             output = {}
             for into in inps:
                 for i in into:
                     if i.key in output:
-                        print("""LogicGRAPH data lots due to multiple inputs
+                        print("""LogicGRAPH data lost due to multiple inputs
                                  with the same key""")
                     else:
                         if settings["Interpolation type"][0] == "linear":
                             output[i.key] = linear(i.val)
+        return output
 
 Inter = Interpreter()
 

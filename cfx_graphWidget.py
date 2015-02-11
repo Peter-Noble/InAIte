@@ -115,7 +115,7 @@ class GraphWidget(QtGui.QGraphicsView):
         self.setBackgroundBrush(QtCore.Qt.lightGray)
         self.setMinimumSize(410, 110)
         self.setMaximumSize(410, 110)
-        self.setMinimumHeight(110)
+        # self.setMinimumHeight(110)
         self.nodes = []
         self.curves = []
         self.checkcorners()
@@ -140,6 +140,25 @@ class GraphWidget(QtGui.QGraphicsView):
         if not itemsMoved:
             self.killTimer(self.timerId)
             self.timerId = 0
+
+    def addCurves(self):
+        for curve in self.curves:
+            self.scene.removeItem(curve)
+
+        tmp = {}
+        for r in self.nodes:
+            if r.pos().x() in tmp:
+                tmp[r.pos().x()] = min(tmp[r.pos().x()], r.pos().y())
+            else:
+                tmp[r.pos().x()] = r.pos().y()
+        sor = sorted(tmp.items(), key=lambda x: x[0])
+
+        for node in range(len(sor)-1):
+            fro = QtCore.QPoint(sor[node][0], sor[node][1])
+            to = QtCore.QPoint(sor[node+1][0], sor[node+1][1])
+            c = Curve(fro, to)
+            self.scene.addItem(c)
+            self.curves.append(c)
 
     def checkcorners(self):
         putleft = True
@@ -175,24 +194,16 @@ class GraphWidget(QtGui.QGraphicsView):
             item.setPos(sr.right(), sr.bottom())
             self.nodes.append(item)
             self.scene.addItem(item)
-        for curve in self.curves:
-            self.scene.removeItem(curve)
-        self.curves = []
-        sor = sorted(self.nodes, key=lambda node: node.pos().x())
-        for node in range(len(sor)-1):
-            c = Curve(sor[node].pos(), sor[node+1].pos())
-            self.scene.addItem(c)
-            self.curves.append(c)
-
-        sigout = ("linear",
-                  [(node.pos().x(), node.pos().y()) for node in self.nodes])
-        # TODO  "linear" needs to be replaced once there are curves
+        self.addCurves()
         self.graphChanged.emit()
-        # TODO  This needs to broadcast the data that is going to be saved
 
     def setGraph(self, data):
-        pass
-
+        for node in data[1]:
+            item = Node(self)
+            item.setPos(node[0], node[1])
+            self.nodes.append(item)
+            self.scene.addItem(item)
+        self.addCurves()
 
 class GraphEditor(QtGui.QWidget):
     def __init__(self):
@@ -201,19 +212,30 @@ class GraphEditor(QtGui.QWidget):
         vbox = QtGui.QVBoxLayout()
         self.gw = GraphWidget()
         vbox.addWidget(self.gw)
-        vbox.setGeometry(QtCore.QRect(-220, -60, 4400, 120))
-
         self.setLayout(vbox)
-        self.setMinimumSize(450, 140)
-        self.setSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Minimum)
-        #self.setMinimumSize(800, 500)
 
 
 if __name__ == "__main__":
     app = QtGui.QApplication(sys.argv)
     QtCore.qsrand(QtCore.QTime(0, 0, 0).secsTo(QtCore.QTime.currentTime()))
 
-    widget = cfx_editor()
-    widget.show()
+    vbox = QtGui.QVBoxLayout()
+    row = QtGui.QHBoxLayout()
+    row.addWidget(QtGui.QLabel("Hello"))
+    row.addWidget(QtGui.QSpinBox())
+    vbox.addLayout(row)
+    row = QtGui.QHBoxLayout()
+    widget = GraphEditor()
+    row.addWidget(QtGui.QLabel("Hello"))
+    row.addWidget(widget)
+    vbox.addLayout(row)
+    window = QtGui.QWidget()
+    row = QtGui.QHBoxLayout()
+    row.addWidget(QtGui.QLabel("Hello"))
+    row.addWidget(QtGui.QLabel("Hello"))
+    vbox.addLayout(row)
+
+    window.setLayout(vbox)
+    window.show()
 
     sys.exit(app.exec_())

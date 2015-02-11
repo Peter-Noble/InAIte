@@ -16,6 +16,7 @@ from cfx_agent import Agent
 class Simulation():
     """The object that contains everything once the simulation starts"""
     def __init__(self):
+        self.registered = False
         self.agents = {}
         self.lastframe = 1
         self.compbrains = {}
@@ -24,11 +25,13 @@ class Simulation():
         State = chan.State(self)
         World = chan.World(self)
         Crowd = chan.Crowd(self)
+        Ground = chan.Ground(self)
         self.lvars = {"Noise": wr(Noise),
                       "Sound": wr(Sound),
                       "State": wr(State),
                       "World": wr(World),
-                      "Crowd": wr(Crowd)}
+                      "Crowd": wr(Crowd),
+                      "Ground": wr(Ground)}
 
     def newagent(self, name):
         group = sce.cfx_agents.coll[name].group
@@ -60,9 +63,12 @@ class Simulation():
             self.lastframe = sce.frame_current
 
     def startframehandler(self):
+        self.registered = True
         if self.step in bpy.app.handlers.frame_change_pre:
             bpy.app.handlers.frame_change_pre.remove(self.step)
         bpy.app.handlers.frame_change_pre.append(self.step)
 
     def stopframehandler(self):
-        bpy.app.handlers.frame_change_pre.remove(self.step)
+        if self.registered:
+            bpy.app.handlers.frame_change_pre.remove(self.step)
+            self.registered = False

@@ -33,6 +33,11 @@ unregisterAllTypes = cfx_blenderData.setAllTypes
 update_cfx_brains = cfx_blenderData.update_cfx_brains
 cfx_brains = []
 
+import cfx_actions
+imp.reload(cfx_actions)
+action_register = cfx_actions.action_register
+action_unregister = cfx_actions.action_unregister
+
 # =============== GROUPS LIST START ===============#
 
 
@@ -366,6 +371,7 @@ def register():
     bpy.utils.register_module(__name__)
     # I think this registers the SCENE_PT_crowdfx class...
     # ...or maybe all the classes in the file?
+    action_register()
     setAllTypes()
     global cfx_brains
     cfx_brains = bpy.context.scene.cfx_brains
@@ -374,6 +380,7 @@ def register():
 def unregister():
     bpy.utils.unregister_module(__name__)
     # ...and this one unregisters the SCENE_PT_crowdfx
+    action_unregister()
     unregisterAllTypes()
 
 if __name__ == "__main__":

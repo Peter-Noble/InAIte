@@ -14,10 +14,11 @@ class MasterChannel:
     @property
     def retrieve(self):
         """Override this in child classes for dynamic properties"""
-        pass
+        return 0
 
     def register(self, agent, frequency, val):
         """Override this in child classes to define channels"""
+        pass
 
     def setuser(self, userid):
         """Set up the channel to be used with a new agent"""
@@ -27,12 +28,12 @@ class MasterChannel:
 
 
 class Wrapper:
+    """This is so that the channel can decide how to handle retrievals"""
     def __init__(self, channel, *args):
         self.channel = channel
 
     def __getattr__(self, attr):
-        # print("Retrieving", attr)
-        if hasattr(self.channel, attr):
+        if attr in self.channel.__dir__():
             return getattr(self.channel, attr)
         else:
             return self.channel.retrieve(attr)

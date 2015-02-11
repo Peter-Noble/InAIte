@@ -5,7 +5,12 @@ from collections import OrderedDict
 from cfx_compileBrain import compilebrain
 
 from cfx_nodeEditor import CfxEditor, NODETYPES
-from cfx_propertiesEditor import Properties
+
+# from cfx_propertiesEditor import Properties
+import imp
+import cfx_propertiesEditor
+imp.reload(cfx_propertiesEditor)
+Properties = cfx_propertiesEditor.Properties
 
 import threading
 from multiprocessing import Process
