@@ -22,8 +22,10 @@ sys.path.append(path)
 
 import imp
 
+import cfx_simulate
 from cfx_simulate import Simulation
 
+import cfx_gui
 from cfx_gui import runui
 
 import cfx_blenderData
@@ -278,6 +280,7 @@ class SCENE_OT_cfx_start(Operator):
     def execute(self, context):
         global sim
         sim = Simulation()
+        sim.actions()
         for ag in bpy.context.scene.cfx_agents.coll:
             sim.newagent(ag.name)
         sim.startframehandler()
@@ -365,6 +368,9 @@ class SCENE_PT_crowdfx(Panel):
         row.operator(SCENE_OT_cfx_startui.bl_idname)
         row.operator(SCENE_OT_cfx_start.bl_idname)
         row.operator(SCENE_OT_cfx_stop.bl_idname)
+
+        row = layout.row()
+        row.label(text="ALWAYS save before pressing the start button!")
 
 
 def register():

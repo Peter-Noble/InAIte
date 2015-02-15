@@ -2,6 +2,7 @@ import sys
 import math
 from PySide import QtCore, QtGui
 from collections import OrderedDict
+import cfx_compileBrain
 from cfx_compileBrain import compilebrain
 
 from cfx_nodeEditor import CfxEditor, NODETYPES

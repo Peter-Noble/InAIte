@@ -3,6 +3,7 @@ import math
 from PySide import QtCore, QtGui
 import collections
 from copy import deepcopy
+import cfx_nodeFunctions
 from cfx_nodeFunctions import logictypes, statetypes
 
 

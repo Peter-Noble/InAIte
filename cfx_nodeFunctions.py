@@ -1,6 +1,8 @@
 from collections import OrderedDict
 import math
+import cfx_brainClasses
 from cfx_brainClasses import Neuron, State
+import cfx_pythonEmbededInterpreter
 from cfx_pythonEmbededInterpreter import Interpreter
 import PySide
 from PySide import QtGui, QtCore
@@ -328,7 +330,8 @@ logictypes = OrderedDict([
 
 """
 class State{NAME}(State):
-    settings = OrderedDict([("Fade in", 5),
+    settings = OrderedDict([("Action", ""),
+                            ("Fade in", 5),
                             ("Fade out", 5)])
     colour = QtGui.QColor(128, 128, 128)
 
@@ -342,7 +345,8 @@ class State{NAME}(State):
 
 class StateSTART(State):
     """Points to the first state for the agent to be in"""
-    settings = OrderedDict([("Fade in", 5),
+    settings = OrderedDict([("Action", ""),
+                            ("Fade in", 5),
                             ("Fade out", 5)])
 
     colour = QtGui.QColor(255, 255, 153)
@@ -356,7 +360,8 @@ class StateSTART(State):
 
 
 class StateSTD(State):
-    settings = OrderedDict([("Trigger", "default"),
+    settings = OrderedDict([("Action", ""),
+                            ("Trigger", "default"),
                             ("Fade in", 5),
                             ("Fade out", 5)])
 
@@ -374,7 +379,8 @@ class StateSTD(State):
 
 class StateINTERUPT(State):
     """Jump from anywhere to this node if a condition is met"""
-    settings = OrderedDict([("Trigger", "default"),
+    settings = OrderedDict([("Action", ""),
+                            ("Trigger", "default"),
                             ("Theshold", 0.5),
                             ("Fade in", 5),
                             ("Fade out", 5),
@@ -397,7 +403,8 @@ class StateINTERUPT(State):
 
 class StateTRANSITION(State):
     """This node polls the node it's connected to and returns those results"""
-    settings = OrderedDict([("Fade in", 5),
+    settings = OrderedDict([("Action", ""),
+                            ("Fade in", 5),
                             ("Fade out", 5)])
 
     colour = QtGui.QColor(255, 128, 0)

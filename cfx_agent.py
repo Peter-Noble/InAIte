@@ -5,6 +5,7 @@ import copy
 
 sce = bpy.context.scene
 O = sce.objects
+D = bpy.data.objects
 
 
 class Agent:
@@ -13,6 +14,7 @@ class Agent:
         self.sim = brain.sim
         self.id = blenderid
         self.brain = brain
+        self.statetree = self.brain.newtree()
         self.external = {"id": self.id, "type": self.brain.type, "tags": {}}
         """self.external modified by the agent and then coppied to self.access
         at the end of the frame so that the updated values can be accessed by
@@ -22,22 +24,22 @@ class Agent:
         "agent variables. Don't access from other agents"
 
         """ar - absolute rot, r - change rot by, rs - rot speed"""
-        self.arx = O[blenderid].rotation_euler[0]
+        self.arx = D[blenderid].rotation_euler[0]
         self.rx = 0
         self.rsx = 0
 
-        self.ary = O[blenderid].rotation_euler[1]
+        self.ary = D[blenderid].rotation_euler[1]
         self.ry = 0
         self.rsy = 0
 
-        self.arz = O[blenderid].rotation_euler[2]
+        self.arz = D[blenderid].rotation_euler[2]
         self.rz = 0
         self.rsz = 0
 
         """ap - absolute pos, p - change pos by, s - speed"""
-        self.apx = 0
-        self.px = 0
-        self.sx = 0
+        self.apx = D[blenderid].location[0]
+        self.px = D[blenderid].location[1]
+        self.sx = D[blenderid].location[2]
 
         self.apy = 0
         self.py = 0
@@ -48,10 +50,19 @@ class Agent:
         self.sz = 0
 
     def step(self):
-        self.brain.execute(self.id)
+        self.brain.execute(self.id, self.statetree)
         self.rx = self.brain.outvars["rx"] if self.brain.outvars["rx"] else 0
         self.ry = self.brain.outvars["ry"] if self.brain.outvars["ry"] else 0
         self.rz = self.brain.outvars["rz"] if self.brain.outvars["rz"] else 0
+
+        self.arx += self.rx + self.rsx
+        self.rx = 0
+
+        self.ary += self.ry + self.rsy
+        self.ry = 0
+
+        self.arz += self.rz + self.rsz
+        self.rz = 0
 
         self.px = self.brain.outvars["px"] if self.brain.outvars["px"] else 0
         self.py = self.brain.outvars["py"] if self.brain.outvars["py"] else 0
@@ -59,18 +70,6 @@ class Agent:
 
         self.external["tags"] = self.brain.tags
         self.agvars = self.brain.agvars
-
-        self.arx += self.rx
-        self.arx += self.rsx
-        self.rx = 0
-
-        self.ary += self.ry
-        self.ary += self.rsy
-        self.ry = 0
-
-        self.arz += self.rz
-        self.arz += self.rsz
-        self.rz = 0
 
         move = mathutils.Vector((self.px, self.py, self.pz))
 
@@ -81,7 +80,14 @@ class Agent:
         rotation = x * y * z
         result = move * rotation
 
-        self.result = result
+        self.apx += self.px + self.sx + result[0]
+        self.px = 0
+
+        self.apy += self.py + self.sy + result[1]
+        self.py = 0
+
+        self.apz += self.pz + self.sz + result[2]
+        self.pz = 0
 
         self.apply()
 
@@ -93,22 +99,23 @@ class Agent:
         # tmp = unit * rotation
         # O["Empty"].location = tmp
 
-        # print(O[self.id].rotation_euler)
-
-        result = self.result
+        if D[self.id].animation_data:
+            D[self.id].animation_data.action_extrapolation = 'HOLD_FORWARD'
+            D[self.id].animation_data.action_blend_type = 'ADD'
 
         """Set objects rotation and location"""
-        O[self.id].rotation_euler = (self.arx, self.ary, self.arz)
-        O[self.id].location = (O[self.id].location[0] + result[0],
-                               O[self.id].location[1] + result[1],
-                               O[self.id].location[2] + result[2])
+        D[self.id].rotation_euler = (self.arx, self.ary, self.arz)
+        D[self.id].location = (self.apx, self.apy, self.apz)
 
-        # print(O[self.id].rotation_euler)
+        if D[self.id].animation_data:
+            for track in D[self.id].animation_data.nla_tracks:
+                track.mute = False
 
+        print("5", O[self.id].location)
         """Set the keyframes"""
-        O[self.id].keyframe_insert(data_path="rotation_euler",
+        D[self.id].keyframe_insert(data_path="rotation_euler",
                                    frame=sce.frame_current)
-        O[self.id].keyframe_insert(data_path="location",
+        D[self.id].keyframe_insert(data_path="location",
                                    frame=sce.frame_current)
 
         self.access = copy.deepcopy(self.external)

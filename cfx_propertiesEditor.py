@@ -4,6 +4,7 @@ from PySide import QtCore, QtGui
 import collections
 import functools
 import copy
+import cfx_nodeFunctions
 from cfx_nodeFunctions import logictypes, statetypes
 
 # from cfx_graphWidget import GraphEditor

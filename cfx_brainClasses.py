@@ -1,6 +1,10 @@
 import cfx_channels as chan
 import PySide
 import random
+import functools
+import bpy
+
+sce = bpy.context.scene
 
 
 class Impulse():
@@ -95,9 +99,40 @@ class State():
         """If this state is a valid next move return float > 0"""
         return 1.0
 
-    def moveto(self):
+    def moveto(self, userid):
         """Called when the current state moves to this node"""
         self.currentframe = 0
+        act = self.settings["Action"]  # STRING
+        if act in self.tree.brain.sim.actions:
+            actionobj = self.tree.brain.sim.actions[act]  # from cfx_motion.py
+            obj = sce.objects[userid]  # bpy object
+            tr = obj.animation_data.nla_tracks.new()  # NLA track
+            action = actionobj.action  # bpy action
+            strip = tr.strips.new("", sce.frame_current, action)
+            strip.extrapolation = 'HOLD_FORWARD'
+            strip.use_auto_blend = True
+            # This needs replacing with fade values from the nodes
+            self.length = actionobj.length
+            print("Action stip added", strip)
+
+    def active(self):
+        self.currentframe += 1
+        if self.currentframe < self.length:
+            fr = self.currentframe
+            action = self.tree.brain.sim.actions[self.settings["Action"]]
+            if "rotation_euler" in action.motiondata:
+                rot = action.motiondata["rotation_euler"]
+                self.tree.brain.outvars["rx"] += rot[0][fr] - rot[0][fr - 1]
+                self.tree.brain.outvars["ry"] += rot[1][fr] - rot[1][fr - 1]
+                self.tree.brain.outvars["rz"] += rot[2][fr] - rot[2][fr - 1]
+            if "location" in action.motiondata:
+                loc = action.motiondata["location"]
+                self.tree.brain.outvars["px"] += loc[0][fr] - loc[0][fr - 1]
+                self.tree.brain.outvars["py"] += loc[1][fr] - loc[1][fr - 1]
+                self.tree.brain.outvars["pz"] += loc[2][fr] - loc[2][fr - 1]
+            return True
+        else:
+            return False
 
     def evaluate(self):
         """Return the state to move to (allowed to return itself)"""
@@ -152,7 +187,7 @@ class State():
 
         """Check to see if the current state is still playing an animation"""
         if self.currentframe < self.length - self.settings["Fade out"]:
-            self.currentframe += 1
+            # self.currentframe += 1
             return self
         # TODO Blender code needed in here to update the current frame
 
@@ -177,28 +212,34 @@ class State():
 
 class StateTree():
     """Contains all the states"""
-    def __init__(self):
+    def __init__(self, brain):
+        self.brain = brain
         self.interupts = []
         self.states = []
+        self.active = []
         self.current = None
         self.start = None
         """current and start will begin the same but current will change"""
-        self.brain = None  # Assigned when agent is compiled
 
-    def execute(self):
+    def execute(self, userid):
+        tmp = []
         if self.current:
             cur = self.current.evaluate()
             if self.current != cur:
-                cur.moveto()
                 self.current = cur
-                print("Moving into new state", cur.__class__.__name__)
+                cur.moveto(userid)
+                tmp.append(cur)
+                # print("Moving into new state", cur.__class__.__name__)
+        for active in self.active:
+            if active.active():
+                tmp.append(active)
+        self.active = tmp
 
 
 class Brain():
     """An executable brain object. Only one created per group it is used in"""
-    def __init__(self, type, sim, tree):
-        self.tree = tree
-        self.tree.brain = self
+    def __init__(self, type, sim, newtree):
+        self.newtree = functools.partial(newtree, self)
         self.sim = sim
         self.type = type
         self.neurons = {}
@@ -214,7 +255,7 @@ class Brain():
         self.tags = self.sim.agents[self.currentuser].access["tags"]
         self.agvars = self.sim.agents[self.currentuser].agvars
 
-    def execute(self, userid):
+    def execute(self, userid, statetree):
         """Called for each time the agents needs to evaluate"""
         self.currentuser = userid
         self.reset()
@@ -222,4 +263,4 @@ class Brain():
             var.setuser(userid)
         for out in self.outputs:
             self.neurons[out].evaluate()
-        self.tree.execute()
+        statetree.execute(userid)

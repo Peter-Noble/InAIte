@@ -11,6 +11,7 @@ import cfx_channels as chan
 wr = chan.Wrapper
 
 from cfx_agent import Agent
+from cfx_actions import getmotions
 
 
 class Simulation():
@@ -32,6 +33,9 @@ class Simulation():
                       "World": wr(World),
                       "Crowd": wr(Crowd),
                       "Ground": wr(Ground)}
+
+    def actions(self):
+        self.actions = getmotions()
 
     def newagent(self, name):
         group = sce.cfx_agents.coll[name].group
@@ -70,5 +74,6 @@ class Simulation():
 
     def stopframehandler(self):
         if self.registered:
+            print("Unregistering frame change handler")
             bpy.app.handlers.frame_change_pre.remove(self.step)
             self.registered = False

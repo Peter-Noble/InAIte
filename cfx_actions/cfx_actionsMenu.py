@@ -7,13 +7,6 @@ from bpy.types import PropertyGroup, UIList, Panel, Operator
 sce = bpy.context.scene
 
 
-def getmotions():
-    result = []
-    for m in sce.context.cfx_actions.coll:
-        result.append((m.name, m.motion, m.subtract))
-    return result
-
-
 class action_entry(PropertyGroup):
     """The data structure for the action entries"""
     action = StringProperty()
@@ -131,16 +124,27 @@ class SCENE_PT_action(Panel):
         sub.operator(blid_am, text="", icon="TRIA_UP").direction = 'UP'
         sub.operator(blid_am, text="", icon="TRIA_DOWN").direction = 'DOWN'
 
-# D.actions['Cube.007Action'].fcurves[4].evaluate(10)
-
 
 def action_register():
-    bpy.utils.register_module(__name__)
+    # bpy.utils.register_module(__name__)
+    bpy.utils.register_class(action_entry)
+    bpy.utils.register_class(SCENE_OT_cfx_actions_populate)
+    bpy.utils.register_class(SCENE_OT_action_remove)
+    bpy.utils.register_class(SCENE_OT_agent_move)
+    bpy.utils.register_class(actions_collection)
+    bpy.utils.register_class(SCENE_UL_action)
+    bpy.utils.register_class(SCENE_PT_action)
     bpy.types.Scene.cfx_actions = PointerProperty(type=actions_collection)
     # bpy.utils.register_class(SCENE_UL_action)
 
 
 def action_unregister():
-    bpy.utils.unregister_module(__name__)
+    #bpy.utils.unregister_module(__name__)
     # del bpy.types.Scene.cfx_actions
     bpy.utils.unregister_class(SCENE_UL_action)
+    bpy.utils.unregister_class(SCENE_PT_action)
+    bpy.utils.unregister_class(SCENE_OT_agent_move)
+    bpy.utils.unregister_class(SCENE_OT_action_remove)
+    bpy.utils.unregister_class(SCENE_OT_cfx_actions_populate)
+    bpy.utils.unregister_class(actions_collection)
+    bpy.utils.unregister_class(action_entry)

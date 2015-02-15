@@ -1,6 +1,7 @@
 from cfx_nodeFunctions import logictypes, statetypes
 from collections import OrderedDict
 from cfx_brainClasses import Neuron, Brain, State, StateTree
+import functools
 
 
 def processstring(toloadtext):
@@ -19,8 +20,8 @@ def processstring(toloadtext):
     return output
 
 
-def compilestatetree(toload):
-    tree = StateTree()
+def compilestatetree(toload, brain):
+    tree = StateTree(brain)
     ref = {}  # Temp storage for adding edges
     for nodeUID in toload["nodes"]:
         lono = toload["nodes"][nodeUID]
@@ -49,8 +50,8 @@ def compilestatetree(toload):
     return tree
 
 
-def compilebrain(toload, category, sim, tree):
-    result = Brain(category, sim, tree)
+def compilebrain(toload, category, sim, newtree):
+    result = Brain(category, sim, newtree)
     """create the connections from the node"""
     for nodeUID in toload["nodes"]:
         lono = toload["nodes"][nodeUID]
@@ -76,6 +77,6 @@ def compilebrain(toload, category, sim, tree):
 
 def compileagent(toloadtext, category, sim):
     toload = processstring(toloadtext)
-    tree = compilestatetree(toload["MotionNode"])
-    brain = compilebrain(toload["LogicNode"], category, sim, tree)
+    newtree = functools.partial(compilestatetree, toload["MotionNode"])
+    brain = compilebrain(toload["LogicNode"], category, sim, newtree)
     return brain
