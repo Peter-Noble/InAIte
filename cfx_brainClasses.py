@@ -113,7 +113,6 @@ class State():
             strip.use_auto_blend = True
             # This needs replacing with fade values from the nodes
             self.length = actionobj.length
-            print("Action stip added", strip)
 
     def active(self):
         self.currentframe += 1

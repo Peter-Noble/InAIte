@@ -2,6 +2,7 @@ import bpy
 import time
 import mathutils
 import copy
+import math
 
 sce = bpy.context.scene
 O = sce.objects
@@ -71,7 +72,12 @@ class Agent:
         self.external["tags"] = self.brain.tags
         self.agvars = self.brain.agvars
 
-        move = mathutils.Vector((self.px, self.py, self.pz))
+        move = mathutils.Vector((self.px + self.sx,
+                                 self.py + self.sy,
+                                 self.pz + self.sz))
+        self.px = 0
+        self.py = 0
+        self.pz = 0
 
         z = mathutils.Matrix.Rotation(-self.arz, 4, 'Z')
         y = mathutils.Matrix.Rotation(-self.ary, 4, 'Y')
@@ -80,24 +86,16 @@ class Agent:
         rotation = x * y * z
         result = move * rotation
 
-        self.apx += self.px + self.sx + result[0]
-        self.px = 0
+        self.apx += result[0]
 
-        self.apy += self.py + self.sy + result[1]
-        self.py = 0
+        self.apy += result[1]
 
-        self.apz += self.pz + self.sz + result[2]
-        self.pz = 0
+        self.apz += result[2]
 
         self.apply()
 
     def apply(self):
         """Called in single thread after all agent.step() calls are done"""
-        # print("Moving: ", result)
-
-        # unit = mathutils.Vector((0,1,0))
-        # tmp = unit * rotation
-        # O["Empty"].location = tmp
 
         if D[self.id].animation_data:
             D[self.id].animation_data.action_extrapolation = 'HOLD_FORWARD'
@@ -106,12 +104,10 @@ class Agent:
         """Set objects rotation and location"""
         D[self.id].rotation_euler = (self.arx, self.ary, self.arz)
         D[self.id].location = (self.apx, self.apy, self.apz)
-
         if D[self.id].animation_data:
             for track in D[self.id].animation_data.nla_tracks:
                 track.mute = False
 
-        print("5", O[self.id].location)
         """Set the keyframes"""
         D[self.id].keyframe_insert(data_path="rotation_euler",
                                    frame=sce.frame_current)

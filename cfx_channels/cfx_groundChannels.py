@@ -25,7 +25,7 @@ class Ground(Mc):
         intersect_faces = []
         # look below to_obj
         for face in to_obj.data.polygons:
-            verts_in_face = face.vertices[:]
+            verts_in_face = face.vertices
             tVerts = []
             for vert in verts_in_face:
                 local_point = to_obj.data.vertices[vert].co
@@ -39,15 +39,6 @@ class Ground(Mc):
             if intersect:
                 location = intersect
                 intersect_faces.append(face.normal)
-        # look above from_obj
-        for face in to_obj.data.polygons:
-            verts_in_face = face.vertices[:]
-            tVerts = []
-            for vert in verts_in_face:
-                local_point = to_obj.data.vertices[vert].co
-                # world_point = to_obj.matrix_world * local_point
-                tVerts.append(to_obj.matrix_world * local_point)
-                # print("vert", vert, " vert co", world_point)
             intersect = geometry.intersect_ray_tri(tVerts[0], tVerts[1],
                                                    tVerts[2],
                                                    Vector((0.0, 0.0, -1.0)),
@@ -55,7 +46,6 @@ class Ground(Mc):
             if intersect:
                 location = intersect
                 intersect_faces.append(face.normal)
-
         if len(intersect_faces) > 0:
             normal = Vector()
             for f in intersect_faces:
@@ -71,14 +61,15 @@ class Ground(Mc):
         s = sce.objects[self.userid]
         results = []
         for g in grounds:
-            results.append(self.calcindividualground(s, g))
+            calcd = self.calcindividualground(s, g)
+            if calcd:
+                results.append(calcd)
         if len(results) > 0:
             """Get the result with the shortest distance to the ground"""
             output = results[0]
             for r in results[1:]:
                 if output[0]-s.location[2] < r[0][2]-s.location[2]:
                     output = r
-            print("Output", output)
             self.store["location"] = output[0]
             self.store["normal"] = output[1]
 
