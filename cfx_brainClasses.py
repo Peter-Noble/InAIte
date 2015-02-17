@@ -54,7 +54,7 @@ class Neuron():
         """Called by any neurons that take this neuron as an input"""
         execute = True
         # if self.parent:
-        #    execute = self.neurons[self.parent].evaluateparent()
+        #     execute = self.neurons[self.parent].evaluateparent()
         # """if the neuron has a parent then only continue if it's active"""
         if execute:
             if self.result:
@@ -77,9 +77,9 @@ class Neuron():
                 output = ImpulseContainer({"None": im})
             return output
 
-    def evaluateparent(self):
-        """return the active state of the parent neuron"""
-        return self.active
+    # def evaluateparent(self):
+    #     """return the active state of the parent neuron"""
+    #     return self.active
 
 
 class State():
@@ -131,7 +131,12 @@ class State():
                 self.tree.brain.outvars["pz"] += loc[2][fr] - loc[2][fr - 1]
             return True
         else:
+            self.currentframe = 0
             return False
+
+    # def evaluateparent(self):
+    #     """return the active state of the parent neuron"""
+    #     return self.currentframe != 0
 
     def evaluate(self):
         """Return the state to move to (allowed to return itself)"""

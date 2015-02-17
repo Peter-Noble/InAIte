@@ -20,8 +20,6 @@ import sys
 path = r'''C:\Users\Peter\Documents\Hills road\Computing\A2\COMP4\CrowdFX'''
 sys.path.append(path)
 
-import imp
-
 import cfx_simulate
 from cfx_simulate import Simulation
 
@@ -29,16 +27,18 @@ import cfx_gui
 from cfx_gui import runui
 
 import cfx_blenderData
-imp.reload(cfx_blenderData)
 setAllTypes = cfx_blenderData.setAllTypes
 unregisterAllTypes = cfx_blenderData.setAllTypes
 update_cfx_brains = cfx_blenderData.update_cfx_brains
 cfx_brains = []
 
 import cfx_actions
-imp.reload(cfx_actions)
 action_register = cfx_actions.action_register
 action_unregister = cfx_actions.action_unregister
+
+import cfx_events
+event_register = cfx_events.event_register
+event_unregister = cfx_events.event_unregister
 
 # =============== GROUPS LIST START ===============#
 
@@ -378,6 +378,7 @@ def register():
     # I think this registers the SCENE_PT_crowdfx class...
     # ...or maybe all the classes in the file?
     action_register()
+    event_register()
     setAllTypes()
     global cfx_brains
     cfx_brains = bpy.context.scene.cfx_brains
@@ -387,6 +388,7 @@ def unregister():
     bpy.utils.unregister_module(__name__)
     # ...and this one unregisters the SCENE_PT_crowdfx
     action_unregister()
+    event_unregister()
     unregisterAllTypes()
 
 if __name__ == "__main__":

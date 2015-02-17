@@ -1,0 +1,1 @@
+from cfx_events.cfx_eventsMenu import event_register, event_unregister

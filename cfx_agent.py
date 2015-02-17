@@ -72,6 +72,8 @@ class Agent:
         self.external["tags"] = self.brain.tags
         self.agvars = self.brain.agvars
 
+        print(self.px, self.sx)
+
         move = mathutils.Vector((self.px + self.sx,
                                  self.py + self.sy,
                                  self.pz + self.sz))
@@ -85,7 +87,6 @@ class Agent:
 
         rotation = x * y * z
         result = move * rotation
-
         self.apx += result[0]
 
         self.apy += result[1]

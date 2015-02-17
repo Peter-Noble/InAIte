@@ -7,6 +7,7 @@ from cfx_pythonEmbededInterpreter import Interpreter
 import PySide
 from PySide import QtGui, QtCore
 import copy
+import bpy
 
 PCol = QtCore.Qt.GlobalColor
 
@@ -311,6 +312,20 @@ class LogicGRAPH(Neuron):
                             output[i.key] = linear(i.val)
         return output
 
+
+class LogicEVENT(Neuron):
+    settings = OrderedDict([("Event name", "default")])
+    colour = QtGui.QColor(PCol.darkGreen)
+
+    def core(self, inps, settings):
+        events = bpy.context.scene.cfx_events.coll
+        en = settings["Event name"]
+        for e in events:
+            if e.eventname == en:
+                if e.time == bpy.context.scene.frame_current:
+                    return 1
+        return 0
+
 Inter = Interpreter()
 
 logictypes = OrderedDict([
@@ -324,7 +339,8 @@ logictypes = OrderedDict([
     ("SETTAG", LogicSETTAG),
     ("QUERYTAG", LogicQUERYTAG),
     ("VARIABLE", LogicVARIABLE),
-    ("GRAPH", LogicGRAPH)
+    ("GRAPH", LogicGRAPH),
+    ("EVENT", LogicEVENT)
 ])
 
 
