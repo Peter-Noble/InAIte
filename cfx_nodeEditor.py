@@ -611,6 +611,7 @@ class CfxEditor(QtGui.QGraphicsView):
 
         for parent in toparent:
             frame = [x for x in self.nodes if x.UID == parent[1]]
+            # TODO  I don't think this works
             if len(frame) > 0:
                 frame[0].addChild(parent[0])
                 parent[0].frameparent = frame[0]
@@ -618,6 +619,47 @@ class CfxEditor(QtGui.QGraphicsView):
         for edge in toload["edges"]:
             self.addEdge([x for x in self.nodes if x.UID == edge["dest"]][0],
                          [x for x in self.nodes if x.UID == edge["source"]][0])
+        Rect = self.scene.itemsBoundingRect()
+        self.scene.setSceneRect(Rect)
+
+    def insert(self, toload):
+        """Load from the text saved in the blend"""
+        clashChange = {}  # key: UID used to be, value: UID is now
+        toparent = []
+        for node in toload["nodes"]:
+            lono = toload["nodes"][node]  # lono = alias for current node
+            item = [x[1] for x in NODETYPES if x[0] == lono["type"]][0](self)
+            if lono["type"] == "LogicNode":
+                item.colour = logictypes[lono["category"][0]].colour
+            else:
+                item.colour = statetypes[lono["category"][0]].colour
+            UID = self.getUID()
+            clashChange[lono["UID"]] = UID
+            item.UID = UID
+            item.setPos(lono["posx"], lono["posy"])
+            item.settings = lono["settings"]
+            itse = item.settings
+            item.displayname = lono["displayname"]
+            for s in itse:
+                if isinstance(itse[s], str):
+                    itse[s] = itse[s].replace("{NEWLINE}", "\n")
+            item.category = lono["category"]
+            if lono["frameparent"][0]:
+                toparent.append((item, lono["frameparent"][0]))
+            self.nodes.append(item)
+            self.scene.addItem(item)
+        print("toparent", toparent)
+        for parent in toparent:
+            frame = [x for x in self.nodes if x.UID == clashChange[parent[1]]]
+            if len(frame) > 0:
+                frame[0].addChild(parent[0])
+                parent[0].frameparent = frame[0]
+
+        for edge in toload["edges"]:
+            dest = clashChange[edge["dest"]]
+            source = clashChange[edge["source"]]
+            self.addEdge([x for x in self.nodes if x.UID == dest][0],
+                         [x for x in self.nodes if x.UID == source][0])
         Rect = self.scene.itemsBoundingRect()
         self.scene.setSceneRect(Rect)
 

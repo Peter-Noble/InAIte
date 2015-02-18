@@ -160,6 +160,28 @@ class Window(QtGui.QMainWindow):
         fileMenu.addAction(loadfromaction)
         fileMenu.addAction(executefromaction)
 
+        def saveSnippet(win, func):
+            textbox = QtGui.QTextEdit()
+            textbox.setText(func().__str__())
+            self.textbox = textbox
+            textbox.show()
+
+        def insertSnippet(win):
+            loadn, use = QtGui.QInputDialog.getText(win, "Insert snippet",
+                                                    "Snippet")
+            win.main.CfxEditor.insert(eval(loadn))
+
+        saveSnippetAction = QtGui.QAction("&Save snippet", self)
+        saveSnippetAction.triggered.connect(lambda: saveSnippet(self,
+                                            self.main.CfxEditor.save))
+
+        insertSnippetAction = QtGui.QAction("&Insert snippet", self)
+        insertSnippetAction.triggered.connect(lambda: insertSnippet(self))
+
+        snippetMenu = menubar.addMenu("&Snippet")
+        snippetMenu.addAction(saveSnippetAction)
+        snippetMenu.addAction(insertSnippetAction)
+
         self.setCentralWidget(self.main)
 
         self.show()
