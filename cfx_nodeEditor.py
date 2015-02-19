@@ -18,6 +18,8 @@ class Edge(QtGui.QGraphicsItem):
         QtGui.QGraphicsItem.__init__(self)
 
         self.arrowSize = 10.0
+        self.selected = False
+        self.multiselected = False
         self.sourcePoint = QtCore.QPointF()
         self.destPoint = QtCore.QPointF()
         self.setAcceptedMouseButtons(QtCore.Qt.NoButton)
@@ -143,6 +145,15 @@ class Edge(QtGui.QGraphicsItem):
         painter.setBrush(QtCore.Qt.black)
         painter.drawPolygon(QtGui.QPolygonF([line.p1(), sourceArrowP1,
                                              sourceArrowP2]))
+        if self.multiselected or self.selected:
+            painter.setPen(QtGui.QPen(QtCore.Qt.yellow))
+        else:
+            painter.setPen(QtGui.QPen(QtCore.Qt.black))
+        if self.multiselected:
+            painter.setPen(QtGui.QPen(QtCore.Qt.darkBlue, 4))
+        if self.selected:
+            painter.setPen(QtGui.QPen(painter.pen().color().darker(), 4))
+        painter.drawEllipse(line.pointAt(0.5), 6, 6)
 
 
 class Node(QtGui.QGraphicsItem):
@@ -169,6 +180,7 @@ class Node(QtGui.QGraphicsItem):
         self.setZValue(self.ZValue)  # Decides the stacking order
 
         self.selected = False
+        self.multiselected = False
         self.frameparent = None
         self.group = self.graph.nodes
 
@@ -220,6 +232,8 @@ class Node(QtGui.QGraphicsItem):
             painter.setPen(QtGui.QPen(QtCore.Qt.yellow, 4))
         else:
             painter.setPen(QtGui.QPen(QtCore.Qt.darkGray, 4))
+        if self.multiselected:
+            painter.setPen(QtGui.QPen(QtCore.Qt.darkBlue, 4))
         if self.selected:
             painter.setPen(QtGui.QPen(painter.pen().color().darker(), 4))
 
@@ -296,6 +310,8 @@ class Node(QtGui.QGraphicsItem):
                         self.frameparent.addChild(self)
 
     def mousePressEvent(self, event):
+        self.graph.backgroundClick = False
+        self.dragStart = False
         self.update()
         QtGui.QGraphicsItem.mousePressEvent(self, event)
 
@@ -321,6 +337,16 @@ class Node(QtGui.QGraphicsItem):
             Rect.setLeft(min(Rect.left(), -200))
             Rect.setRight(max(Rect.right(), 200))
             self.graph.scene.setSceneRect(Rect)
+
+    def mouseMoveEvent(self, event):
+        self.dragStart = False
+        if not self.dragStart:
+            self.dragStart = True
+            change = event.scenePos() - event.lastScenePos()
+            for node in self.graph.nodes:
+                if node != self and (node.selected or node.multiselected):
+                    node.setPos(node.pos() + change)
+        QtGui.QGraphicsItem.mouseMoveEvent(self, event)
 
 
 class LogicNode(Node):
@@ -361,6 +387,8 @@ class MotionFrame(MotionNode):
             painter.setPen(QtGui.QPen(QtCore.Qt.yellow, 4))
         else:
             painter.setPen(QtGui.QPen(QtCore.Qt.darkGray, 4))
+        if self.multiselected:
+            painter.setPen(QtGui.QPen(QtCore.Qt.darkBlue, 4))
         if self.selected:
             painter.setPen(QtGui.QPen(painter.pen().color().darker(), 4))
 
@@ -422,7 +450,7 @@ class CfxEditor(QtGui.QGraphicsView):
         self.setResizeAnchor(QtGui.QGraphicsView.AnchorViewCenter)
 
         self.setBackgroundBrush(QtCore.Qt.lightGray)
-        # self.setDragMode(QtGui.QGraphicsView.ScrollHandDrag)
+        # self.setDragMode(QtGui.QGraphicsView.RubberBandDrag)
 
         self.scale(0.8, 0.8)
         self.setMinimumSize(800, 450)
@@ -430,6 +458,13 @@ class CfxEditor(QtGui.QGraphicsView):
 
         self.modifiers = None
         self.viewCenter = QtCore.QPointF(0, 0)
+
+        self.pressedDown = False
+        self.backgroundClick = False
+
+        self.rubberBand = QtGui.QRubberBand(QtGui.QRubberBand.Rectangle, self)
+        self.rubrect = QtCore.QRect(0, 0, 0, 0)
+        self.rubMoved = False
 
     def getUID(self):
         UID = 0
@@ -463,20 +498,25 @@ class CfxEditor(QtGui.QGraphicsView):
         self.modifiers = QtGui.QApplication.keyboardModifiers()
 
         if key == QtCore.Qt.Key_Delete:
-            cont = True
-            node = 0
-            while (node < len(self.nodes)) and cont:
-                if self.nodes[node].selected:
-                    edge = len(self.edges)-1
-                    while edge >= 0:
-                        if self.edges[edge] in self.nodes[node].edges():
-                            self.scene.removeItem(self.edges[edge])
-                            del self.edges[edge]
-                        edge -= 1
-                    self.scene.removeItem(self.nodes[node])
-                    del self.nodes[node]
-                    cont = False
-                node += 1
+            todelnodes = set()
+            todeledges = set()
+            for m, node in enumerate(self.nodes):
+                if node.selected or node.multiselected:
+                    for n, edge in enumerate(self.edges):
+                        if edge in node.edges():
+                            self.scene.removeItem(edge)
+                            todeledges.add(n)
+                    self.scene.removeItem(node)
+                    todelnodes.add(m)
+            for n, edge in enumerate(self.edges):
+                if edge.selected or edge.multiselected:
+                    if n not in todeledges:
+                        todeledges.add(n)
+                        self.scene.removeItem(edge)
+            for edge in sorted(todeledges, reverse=True):
+                del self.edges[edge]
+            for node in sorted(todelnodes, reverse=True):
+                del self.nodes[node]
         else:
             QtGui.QGraphicsView.keyPressEvent(self, event)
 
@@ -554,6 +594,42 @@ class CfxEditor(QtGui.QGraphicsView):
         self.nodes = []
         self.edges = []
 
+    def mousePressEvent(self, event):
+        self.backgroundClick = True
+        QtGui.QGraphicsView.mousePressEvent(self, event)
+        if self.backgroundClick and event.button() == QtCore.Qt.LeftButton:
+            self.pressedDown = True
+            self.rubMoved = False
+            self.origin = event.pos()
+            self.rubberBand.setGeometry(QtCore.QRect(self.origin,
+                                                     QtCore.QSize()))
+            self.rubberBand.show()
+
+    def mouseMoveEvent(self, event):
+        QtGui.QGraphicsView.mouseMoveEvent(self, event)
+        if self.pressedDown:
+            self.rubMoved = True
+            self.rubrect = QtCore.QRect(self.origin, event.pos()).normalized()
+            self.rubberBand.setGeometry(self.rubrect)
+
+    def mouseReleaseEvent(self, event):
+        QtGui.QGraphicsView.mouseReleaseEvent(self, event)
+        if self.pressedDown and self.rubMoved:
+            self.rubberBand.hide()
+            self.pressedDown = False
+            rect = self.mapToScene(self.rubrect).boundingRect()
+            for edge in self.edges:
+                line = QtCore.QLineF(edge.sourcePoint, edge.destPoint)
+                mid = line.pointAt(0.5).toPoint()
+                if rect.contains(mid):
+                    edge.multiselected = not edge.multiselected
+                    edge.update()
+            for node in self.nodes:
+                bound = node.mapRectToScene(node.boundingRect()).toRect()
+                if rect.contains(bound):
+                    node.multiselected = not node.multiselected
+                    node.update()
+
     def save(self):
         """Turn the node graph into a string"""
         tosave = {"nodes": {}, "edges": []}
@@ -582,6 +658,38 @@ class CfxEditor(QtGui.QGraphicsView):
                 "source": edge.source.UID,
                 "dest": edge.dest.UID
             })
+        return tosave
+
+    def saveSnippet(self):
+        """Turn the selected section of the node graph into a string"""
+        tosave = {"nodes": {}, "edges": []}
+        typest = ""
+        for node in self.nodes:
+            if node.selected or node.multiselected:
+                for types in NODETYPES:
+                    if types[1] == node.__class__:
+                        typest = types[0]
+                settings = deepcopy(node.settings)
+                for s in settings:
+                    if isinstance(settings[s], str):
+                        settings[s] = settings[s].replace("\n", "{NEWLINE}")
+                fp = node.frameparent.UID if node.frameparent else None,
+                tosave["nodes"][node.UID] = {
+                    "UID": node.UID,
+                    "type": typest,
+                    "posx": node.pos().x(),
+                    "posy": node.pos().y(),
+                    "frameparent": fp,
+                    "settings": node.settings,
+                    "category": node.category,
+                    "displayname": node.displayname
+                }
+        for edge in self.edges:
+            if edge.selected or edge.multiselected:
+                tosave["edges"].append({
+                    "source": edge.source.UID,
+                    "dest": edge.dest.UID
+                })
         return tosave
 
     def load(self, toload):
@@ -646,6 +754,7 @@ class CfxEditor(QtGui.QGraphicsView):
             item.category = lono["category"]
             if lono["frameparent"][0]:
                 toparent.append((item, lono["frameparent"][0]))
+            item.multiselected = True
             self.nodes.append(item)
             self.scene.addItem(item)
         print("toparent", toparent)
@@ -658,8 +767,10 @@ class CfxEditor(QtGui.QGraphicsView):
         for edge in toload["edges"]:
             dest = clashChange[edge["dest"]]
             source = clashChange[edge["source"]]
-            self.addEdge([x for x in self.nodes if x.UID == dest][0],
-                         [x for x in self.nodes if x.UID == source][0])
+            nodeUIDs = [x.UID for x in self.nodes]
+            if source in nodeUIDs and dest in nodeUIDs:
+                self.addEdge([x for x in self.nodes if x.UID == dest][0],
+                             [x for x in self.nodes if x.UID == source][0])
         Rect = self.scene.itemsBoundingRect()
         self.scene.setSceneRect(Rect)
 

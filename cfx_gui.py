@@ -173,7 +173,7 @@ class Window(QtGui.QMainWindow):
 
         saveSnippetAction = QtGui.QAction("&Save snippet", self)
         saveSnippetAction.triggered.connect(lambda: saveSnippet(self,
-                                            self.main.CfxEditor.save))
+                                            self.main.CfxEditor.saveSnippet))
 
         insertSnippetAction = QtGui.QAction("&Insert snippet", self)
         insertSnippetAction.triggered.connect(lambda: insertSnippet(self))
