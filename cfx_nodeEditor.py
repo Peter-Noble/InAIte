@@ -6,6 +6,9 @@ from copy import deepcopy
 import cfx_nodeFunctions
 from cfx_nodeFunctions import logictypes, statetypes
 
+MULTISELECTCOLOUR = QtGui.QColor(255, 204, 0)
+HIGHLIGHTCOLOUR = QtCore.Qt.yellow
+
 
 class Edge(QtGui.QGraphicsItem):
     """The GUI representation of connections between nodes drawn as arrows"""
@@ -146,11 +149,11 @@ class Edge(QtGui.QGraphicsItem):
         painter.drawPolygon(QtGui.QPolygonF([line.p1(), sourceArrowP1,
                                              sourceArrowP2]))
         if self.multiselected or self.selected:
-            painter.setPen(QtGui.QPen(QtCore.Qt.yellow))
+            painter.setPen(QtGui.QPen(HIGHLIGHTCOLOUR))
         else:
             painter.setPen(QtGui.QPen(QtCore.Qt.black))
         if self.multiselected:
-            painter.setPen(QtGui.QPen(QtCore.Qt.darkBlue, 4))
+            painter.setPen(QtGui.QPen(MULTISELECTCOLOUR, 4))
         if self.selected:
             painter.setPen(QtGui.QPen(painter.pen().color().darker(), 4))
         painter.drawEllipse(line.pointAt(0.5), 6, 6)
@@ -229,11 +232,11 @@ class Node(QtGui.QGraphicsItem):
     def paint(self, painter, option, widget):
         painter.setPen(QtCore.Qt.NoPen)
         if option.state & QtGui.QStyle.State_Sunken:
-            painter.setPen(QtGui.QPen(QtCore.Qt.yellow, 4))
+            painter.setPen(QtGui.QPen(HIGHLIGHTCOLOUR, 4))
         else:
             painter.setPen(QtGui.QPen(QtCore.Qt.darkGray, 4))
         if self.multiselected:
-            painter.setPen(QtGui.QPen(QtCore.Qt.darkBlue, 4))
+            painter.setPen(QtGui.QPen(MULTISELECTCOLOUR, 4))
         if self.selected:
             painter.setPen(QtGui.QPen(painter.pen().color().darker(), 4))
 
@@ -384,11 +387,11 @@ class MotionFrame(MotionNode):
     def paint(self, painter, option, widget):
         painter.setPen(QtCore.Qt.NoPen)
         if option.state & QtGui.QStyle.State_Sunken:
-            painter.setPen(QtGui.QPen(QtCore.Qt.yellow, 4))
+            painter.setPen(QtGui.QPen(HIGHLIGHTCOLOUR, 4))
         else:
             painter.setPen(QtGui.QPen(QtCore.Qt.darkGray, 4))
         if self.multiselected:
-            painter.setPen(QtGui.QPen(QtCore.Qt.darkBlue, 4))
+            painter.setPen(QtGui.QPen(MULTISELECTCOLOUR, 4))
         if self.selected:
             painter.setPen(QtGui.QPen(painter.pen().color().darker(), 4))
 
@@ -486,6 +489,14 @@ class CfxEditor(QtGui.QGraphicsView):
             item.colour = statetypes[cat].colour
         self.nodes.append(item)
         self.scene.addItem(item)
+        for node in self.nodes:
+            node.selected = False
+            node.multiselected = False
+            node.update()
+        for edge in self.edges:
+            edge.selected = False
+            edge.multiselected = False
+            edge.update()
 
     def itemMoved(self):
         if not self.timerId:

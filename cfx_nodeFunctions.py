@@ -44,209 +44,14 @@ class Logic{NAME}(Neuron):
 """
 
 
-class LogicAND(Neuron):
-    """returns the values multiplied together"""
-    settings = OrderedDict([("Single output", True)])
-    colour = QtGui.QColor(PCol.darkGreen)
-
-    def core(self, inps, settings):
-        if settings["Single output"]:
-            total = 1
-            for into in inps:
-                for i in into:
-                    total *= i.val
-            return {"None": total}
-        else:
-            results = {}
-            for into in inps:
-                for i in into:
-                    if i.key in results:
-                        results[i.key] *= i.val
-                    else:
-                        results[i.key] = i.val
-            return results
-
-
-class LogicOR(Neuron):
-    """returns the maximum value"""
-    settings = OrderedDict([("Single output", True)])
-    colour = QtGui.QColor(PCol.darkGreen)
-
-    def core(self, inps, settings):
-        if settings["Single output"]:
-            total = 1
-            for into in inps:
-                for i in [i.val for i in into]:
-                    total *= (1-i)
-            return 1-total
-        else:
-            results = {}
-            for into in inps:
-                for i in into:
-                    if i.key in results:
-                        results[i.key] *= (1-i.val)
-                    else:
-                        results[i.key] = (1-i.val)
-            results.update((k, 1-v) for k, v in results.items())
-            return results
-
-
-class LogicPYTHON(Neuron):
-    """execute a python expression"""
-    settings = OrderedDict([("Expression", {"type": "MLEdit",
-                                            "value": "output = Noise.random"})
-                            ])
-    colour = QtGui.QColor(PCol.darkCyan)
-
-    def core(self, inps, settings):
-        global Inter
-        setup = copy.copy(self.brain.lvars)
-        setup["inps"] = inps
-        setup["settings"] = settings
-        Inter.setup(setup)
-        Inter.enter(settings["Expression"]["value"])
-        result = Inter.getoutput()
-        return result
-
-
-class LogicPRINT(Neuron):
-    """print everything that is given to it"""
-    settings = OrderedDict([("Label", "")])
-    colour = QtGui.QColor(PCol.darkMagenta)
-
-    def core(self, inps, settings):
-        for into in inps:
-            for i in into:
-                print("PRINT NODE", settings["Label"], ">>", i.key, i.val)
-        return 1
-
-
-class LogicMAP(Neuron):
-    """Map the input from the input range to the output range
-    (extrapolates outside of input range)"""
-    settings = OrderedDict([("Lower input", 1.0), ("Upper input", 2.0),
-                            ("Lower output", 0.0), ("Upper output", 10.0)])
-    colour = QtGui.QColor(PCol.darkBlue)
-
-    def core(self, inps, settings):
-        result = {}
-        if settings["Lower input"] != settings["Upper input"]:
-            for into in inps:
-                for i in into:
-                    num = i.val
-                    li = settings["Lower input"]
-                    ui = settings["Upper input"]
-                    lo = settings["Lower output"]
-                    uo = settings["Upper output"]
-                    result[i.key] = ((uo - lo) / (ui - li)) * (num - li) + lo
-        return result
-
-
-class LogicOUTPUT(Neuron):
-    """Sets an agents output. (Has to be picked up in cfx_agents.Agents)"""
-    settings = OrderedDict([("Output", ("ry", ("rx", "ry", "rz",
-                                               "px", "py", "pz"))),
-                            ("Multi input type",
-                            ("Average", ("Average", "Max")))
-                            ])
-    colour = QtGui.QColor(PCol.darkRed)
-
-    def core(self, inps, settings):
-        val = 0
-        if settings["Multi input type"][0] == "Average":
-            count = 0
-            for into in inps:
-                for i in into:
-                    val += i.val
-                    count += 1
-            out = val/(max(1, count))
-        elif settings["Multi input type"][0] == "Max":
-            out = 0
-            for into in inps:
-                for i in into:
-                    if abs(i.val) > abs(out):
-                        out = i.val
-        self.brain.outvars[settings["Output"][0]] = out
-        return inps
-
-
 class LogicINPUT(Neuron):
     """Retrieve information from the scene or about the agent"""
     settings = OrderedDict([("Input", "Noise.random")])
-    colour = QtGui.QColor(PCol.cyan)
+    colour = QtGui.QColor(255, 0, 0)
 
     def core(self, inps, settings):
         lvars = copy.copy(self.brain.lvars)
         return eval(settings["Input"], lvars)
-
-
-class LogicSETTAG(Neuron):
-    """If any of the inputs are above the Threshold level add or remove the
-    Tag from the agents tags"""
-    settings = OrderedDict([("Tag", "default"),
-                            ("Use threshold", True),
-                            ("Threshold", 0.5),
-                            ("Action", ("Add", ("Add", "Remove"))),
-                            ("Value", 5)
-                            ])
-    colour = QtGui.QColor(PCol.darkYellow)
-
-    def core(self, inps, settings):
-        condition = False
-        total = 0
-        count = 0
-        for into in inps:
-            for i in into:
-                    if i.val > settings["Threshold"]:
-                        condition = True
-                    total += i.val
-                    count += 1
-        if settings["Use threshold"]:
-            if condition:
-                if settings["Action"][0] == "Add":
-                    self.brain.tags[settings["Tag"]] = settings["Value"]
-                else:
-                    del self.brain.tags[settings["Tag"]]
-        else:
-            if settings["Action"][0] == "Add":
-                self.brain.tags[settings["Tag"]] = settings["Value"]
-            else:
-                del self.brain.tags[settings["Tag"]]
-        return settings["Threshold"]
-
-
-class LogicQUERYTAG(Neuron):
-    """Return the value of Tag (normally 1) or else 0"""
-    settings = OrderedDict([("Tag", "default")
-                            ])
-    colour = QtGui.QColor(PCol.yellow)
-
-    def core(self, inps, settings):
-        if settings["Tag"] in self.brain.tags:
-            return self.brain.tags[settings["Tag"]]
-        else:
-            return 0
-
-
-class LogicVARIABLE(Neuron):
-    """Set or retrieve (or both) an agent variable (0 if it doesn't exist)"""
-    settings = OrderedDict([("Variable", "None")
-                            ])
-    colour = QtGui.QColor(PCol.magenta)
-
-    def core(self, inps, settings):
-        count = 0
-        for into in inps:
-            for i in into:
-                self.brain.agvars[settings["Variable"]] += i.val
-                count += 1
-        if count:
-            self.brain.agvars[settings["Variable"]] /= count
-        if settings["Variable"] in self.brain.agvars:
-            out = self.brain.agvars[settings["Variable"]]
-        else:
-            out = 0
-        return self.brain.agvars[settings["Variable"]]
 
 
 class LogicGRAPH(Neuron):
@@ -262,7 +67,7 @@ class LogicGRAPH(Neuron):
                             ("Interpolation type", ("linear", ("linear",)))
                             ])
 
-    colour = QtGui.QColor(204, 0, 102)
+    colour = QtGui.QColor(255, 153, 0)
 
     def core(self, inps, settings):
         def linear(value):
@@ -313,9 +118,174 @@ class LogicGRAPH(Neuron):
         return output
 
 
+class LogicAND(Neuron):
+    """returns the values multiplied together"""
+    settings = OrderedDict([("Single output", True)])
+    colour = QtGui.QColor(204, 153, 0)
+
+    def core(self, inps, settings):
+        if settings["Single output"]:
+            total = 1
+            for into in inps:
+                for i in into:
+                    total *= i.val
+            return {"None": total}
+        else:
+            results = {}
+            for into in inps:
+                for i in into:
+                    if i.key in results:
+                        results[i.key] *= i.val
+                    else:
+                        results[i.key] = i.val
+            return results
+
+
+class LogicOR(Neuron):
+    """returns the maximum value"""
+    settings = OrderedDict([("Single output", True)])
+    colour = QtGui.QColor(153, 204, 0)
+
+    def core(self, inps, settings):
+        if settings["Single output"]:
+            total = 1
+            for into in inps:
+                for i in [i.val for i in into]:
+                    total *= (1-i)
+            return 1-total
+        else:
+            results = {}
+            for into in inps:
+                for i in into:
+                    if i.key in results:
+                        results[i.key] *= (1-i.val)
+                    else:
+                        results[i.key] = (1-i.val)
+            results.update((k, 1-v) for k, v in results.items())
+            return results
+
+
+class LogicQUERYTAG(Neuron):
+    """Return the value of Tag (normally 1) or else 0"""
+    settings = OrderedDict([("Tag", "default")
+                            ])
+    colour = QtGui.QColor(102, 255, 102)
+
+    def core(self, inps, settings):
+        if settings["Tag"] in self.brain.tags:
+            return self.brain.tags[settings["Tag"]]
+        else:
+            return 0
+
+
+class LogicSETTAG(Neuron):
+    """If any of the inputs are above the Threshold level add or remove the
+    Tag from the agents tags"""
+    settings = OrderedDict([("Tag", "default"),
+                            ("Use threshold", True),
+                            ("Threshold", 0.5),
+                            ("Action", ("Add", ("Add", "Remove"))),
+                            ("Value", 5)
+                            ])
+    colour = QtGui.QColor(0, 153, 51)
+
+    def core(self, inps, settings):
+        condition = False
+        total = 0
+        count = 0
+        for into in inps:
+            for i in into:
+                    if i.val > settings["Threshold"]:
+                        condition = True
+                    total += i.val
+                    count += 1
+        if settings["Use threshold"]:
+            if condition:
+                if settings["Action"][0] == "Add":
+                    self.brain.tags[settings["Tag"]] = settings["Value"]
+                else:
+                    del self.brain.tags[settings["Tag"]]
+        else:
+            if settings["Action"][0] == "Add":
+                self.brain.tags[settings["Tag"]] = settings["Value"]
+            else:
+                del self.brain.tags[settings["Tag"]]
+        return settings["Threshold"]
+
+
+class LogicVARIABLE(Neuron):
+    """Set or retrieve (or both) an agent variable (0 if it doesn't exist)"""
+    settings = OrderedDict([("Variable", "None")
+                            ])
+    colour = QtGui.QColor(0, 204, 153)
+
+    def core(self, inps, settings):
+        count = 0
+        for into in inps:
+            for i in into:
+                self.brain.agvars[settings["Variable"]] += i.val
+                count += 1
+        if count:
+            self.brain.agvars[settings["Variable"]] /= count
+        if settings["Variable"] in self.brain.agvars:
+            out = self.brain.agvars[settings["Variable"]]
+        else:
+            out = 0
+        return self.brain.agvars[settings["Variable"]]
+
+
+class LogicMAP(Neuron):
+    """Map the input from the input range to the output range
+    (extrapolates outside of input range)"""
+    settings = OrderedDict([("Lower input", 1.0), ("Upper input", 2.0),
+                            ("Lower output", 0.0), ("Upper output", 10.0)])
+    colour = QtGui.QColor(102, 255, 255)
+
+    def core(self, inps, settings):
+        result = {}
+        if settings["Lower input"] != settings["Upper input"]:
+            for into in inps:
+                for i in into:
+                    num = i.val
+                    li = settings["Lower input"]
+                    ui = settings["Upper input"]
+                    lo = settings["Lower output"]
+                    uo = settings["Upper output"]
+                    result[i.key] = ((uo - lo) / (ui - li)) * (num - li) + lo
+        return result
+
+
+class LogicOUTPUT(Neuron):
+    """Sets an agents output. (Has to be picked up in cfx_agents.Agents)"""
+    settings = OrderedDict([("Output", ("ry", ("rx", "ry", "rz",
+                                               "px", "py", "pz"))),
+                            ("Multi input type",
+                            ("Average", ("Average", "Max")))
+                            ])
+    colour = QtGui.QColor(0, 102, 153)
+
+    def core(self, inps, settings):
+        val = 0
+        if settings["Multi input type"][0] == "Average":
+            count = 0
+            for into in inps:
+                for i in into:
+                    val += i.val
+                    count += 1
+            out = val/(max(1, count))
+        elif settings["Multi input type"][0] == "Max":
+            out = 0
+            for into in inps:
+                for i in into:
+                    if abs(i.val) > abs(out):
+                        out = i.val
+        self.brain.outvars[settings["Output"][0]] = out
+        return inps
+
+
 class LogicEVENT(Neuron):
     settings = OrderedDict([("Event name", "default")])
-    colour = QtGui.QColor(PCol.darkGreen)
+    colour = QtGui.QColor(255, 153, 102)
 
     def core(self, inps, settings):
         events = bpy.context.scene.cfx_events.coll
@@ -326,21 +296,51 @@ class LogicEVENT(Neuron):
                     return 1
         return 0
 
+
+class LogicPYTHON(Neuron):
+    """execute a python expression"""
+    settings = OrderedDict([("Expression", {"type": "MLEdit",
+                                            "value": "output = Noise.random"})
+                            ])
+    colour = QtGui.QColor(0, 0, 0)
+
+    def core(self, inps, settings):
+        global Inter
+        setup = copy.copy(self.brain.lvars)
+        setup["inps"] = inps
+        setup["settings"] = settings
+        Inter.setup(setup)
+        Inter.enter(settings["Expression"]["value"])
+        result = Inter.getoutput()
+        return result
+
+
+class LogicPRINT(Neuron):
+    """print everything that is given to it"""
+    settings = OrderedDict([("Label", "")])
+    colour = QtGui.QColor(255, 255, 255)
+
+    def core(self, inps, settings):
+        for into in inps:
+            for i in into:
+                print("PRINT NODE", settings["Label"], ">>", i.key, i.val)
+        return 1
+
 Inter = Interpreter()
 
 logictypes = OrderedDict([
+    ("INPUT", LogicINPUT),
+    ("GRAPH", LogicGRAPH),
     ("AND", LogicAND),
     ("OR", LogicOR),
-    ("PYTHON", LogicPYTHON),
-    ("PRINT", LogicPRINT),
+    ("QUERYTAG", LogicQUERYTAG),
+    ("SETTAG", LogicSETTAG),
+    ("VARIABLE", LogicVARIABLE),
     ("MAP", LogicMAP),
     ("OUTPUT", LogicOUTPUT),
-    ("INPUT", LogicINPUT),
-    ("SETTAG", LogicSETTAG),
-    ("QUERYTAG", LogicQUERYTAG),
-    ("VARIABLE", LogicVARIABLE),
-    ("GRAPH", LogicGRAPH),
-    ("EVENT", LogicEVENT)
+    ("EVENT", LogicEVENT),
+    ("PYTHON", LogicPYTHON),
+    ("PRINT", LogicPRINT)
 ])
 
 
@@ -365,7 +365,7 @@ class StateSTART(State):
                             ("Fade in", 5),
                             ("Fade out", 5)])
 
-    colour = QtGui.QColor(255, 255, 153)
+    colour = QtGui.QColor(204, 102, 99)
 
     def __init__(self, tree):
         State.__init__(self, tree)
@@ -381,16 +381,32 @@ class StateSTD(State):
                             ("Fade in", 5),
                             ("Fade out", 5)])
 
-    colour = QtGui.QColor(0, 0, 0)
+    colour = QtGui.QColor(102, 153, 255)
 
     def __init__(self, tree):
         State.__init__(self, tree)
-        self.length = 20  # TEMPORARY
+        self.length = 20  # TODO TEMPORARY
 
     def poll(self):
         if self.settings["Trigger"] in self.tree.brain.tags:
             return self.tree.brain.tags[self.settings["Trigger"]]
         return 0
+
+
+class StateTRANSITION(State):
+    """This node polls the node it's connected to and returns those results"""
+    settings = OrderedDict([("Action", ""),
+                            ("Fade in", 5),
+                            ("Fade out", 5)])
+
+    colour = QtGui.QColor(204, 204, 255)
+
+    def __init__(self, tree):
+        State.__init__(self, tree)
+        self.length = 6  # TEMPORARY
+
+    def poll(self):
+        return self.connected[0].poll()
 
 
 class StateINTERUPT(State):
@@ -402,7 +418,7 @@ class StateINTERUPT(State):
                             ("Fade out", 5),
                             ("Hard interupt", True)])
 
-    colour = QtGui.QColor(255, 51, 0)
+    colour = QtGui.QColor(255, 204, 255)
 
     def __init__(self, tree):
         State.__init__(self, tree)
@@ -416,26 +432,9 @@ class StateINTERUPT(State):
                 return val
         return 0
 
-
-class StateTRANSITION(State):
-    """This node polls the node it's connected to and returns those results"""
-    settings = OrderedDict([("Action", ""),
-                            ("Fade in", 5),
-                            ("Fade out", 5)])
-
-    colour = QtGui.QColor(255, 128, 0)
-
-    def __init__(self, tree):
-        State.__init__(self, tree)
-        self.length = 6  # TEMPORARY
-
-    def poll(self):
-        return self.connected[0].poll()
-
-
 statetypes = OrderedDict([
-    ("STD", StateSTD),
-    ("INTERUPT", StateINTERUPT),
     ("START", StateSTART),
-    ("TRANSITION", StateTRANSITION)
+    ("STD", StateSTD),
+    ("TRANSITION", StateTRANSITION),
+    ("INTERUPT", StateINTERUPT)
 ])
