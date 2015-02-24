@@ -75,8 +75,11 @@ class Neuron():
                 output = im
             else:
                 output = ImpulseContainer({"None": im})
+            self.result = output
             return output
 
+    def newFrame(self):
+        self.result = None
     # def evaluateparent(self):
     #     """return the active state of the parent neuron"""
     #     return self.active
@@ -86,10 +89,10 @@ class State():
     """The basic element of the state machine. Not to be used on own"""
     def __init__(self, tree):
         self.tree = tree
-        self.interupts = []
+        self.interrupts = []
         self.connected = []
 
-        self.interupt = False
+        self.interrupt = False
         self.start = False
 
         self.currentframe = 0
@@ -108,27 +111,38 @@ class State():
             obj = sce.objects[userid]  # bpy object
             tr = obj.animation_data.nla_tracks.new()  # NLA track
             action = actionobj.action  # bpy action
-            strip = tr.strips.new("", sce.frame_current, action)
-            strip.extrapolation = 'HOLD_FORWARD'
-            strip.use_auto_blend = True
-            # This needs replacing with fade values from the nodes
+            if action:
+                strip = tr.strips.new("", sce.frame_current, action)
+                strip.extrapolation = 'HOLD_FORWARD'
+                strip.use_auto_blend = False
+                # This needs replacing with fade values from the nodes
             self.length = actionobj.length
+            if not actionobj.subtracted:
+                tr = obj.animation_data.nla_tracks.new()  # NLA track
+                action = actionobj.motion
+                if action:
+                    strip = tr.strips.new("", sce.frame_current, action)
+                    strip.extrapolation = 'HOLD_FORWARD'
+                    strip.use_auto_blend = False
+                    strip.blend_type = 'SUBTRACT'
 
     def active(self):
         self.currentframe += 1
-        if self.currentframe < self.length:
+        if self.currentframe <= self.length:
             fr = self.currentframe
             action = self.tree.brain.sim.actions[self.settings["Action"]]
             if "rotation_euler" in action.motiondata:
                 rot = action.motiondata["rotation_euler"]
-                self.tree.brain.outvars["rx"] += rot[0][fr] - rot[0][fr - 1]
-                self.tree.brain.outvars["ry"] += rot[1][fr] - rot[1][fr - 1]
-                self.tree.brain.outvars["rz"] += rot[2][fr] - rot[2][fr - 1]
+                if not fr >= len(rot[0]):
+                    self.tree.brain.outvars["rx"] += rot[0][fr] - rot[0][fr-1]
+                    self.tree.brain.outvars["ry"] += rot[1][fr] - rot[1][fr-1]
+                    self.tree.brain.outvars["rz"] += rot[2][fr] - rot[2][fr-1]
             if "location" in action.motiondata:
                 loc = action.motiondata["location"]
-                self.tree.brain.outvars["px"] += loc[0][fr] - loc[0][fr - 1]
-                self.tree.brain.outvars["py"] += loc[1][fr] - loc[1][fr - 1]
-                self.tree.brain.outvars["pz"] += loc[2][fr] - loc[2][fr - 1]
+                if not fr >= len(loc[0]):
+                    self.tree.brain.outvars["px"] += loc[0][fr] - loc[0][fr-1]
+                    self.tree.brain.outvars["py"] += loc[1][fr] - loc[1][fr-1]
+                    self.tree.brain.outvars["pz"] += loc[2][fr] - loc[2][fr-1]
             return True
         else:
             self.currentframe = 0
@@ -163,46 +177,46 @@ class State():
                     if rnd < total:
                         return final[i][0]
 
-        """Check if there are any connected interupts to jump to"""
+        """Check if there are any connected interrupts to jump to"""
         connectedhard = []
         connectedsoft = []
-        for coninterupt in self.interupts:
-            val = coninterupt.poll()
+        for coninterrupt in self.interrupts:
+            val = coninterrupt.poll()
             if val:
-                if interupt.settings["Hard interupt"]:
-                    connectedhard.append((coninterupt, val))
+                if interrupt.settings["Hard interrupt"]:
+                    connectedhard.append((coninterrupt, val))
                 else:
-                    connectedsoft.append((coninterupt, val))
+                    connectedsoft.append((coninterrupt, val))
         if len(connectedhard) > 0:
             return pickfromlist(connectedhard)
-        """Check if there are any unconnected interupts to jump to"""
+        """Check if there are any unconnected interrupts to jump to"""
         unconnectedhard = []
         unconnectedsoft = []
-        for interupt in self.tree.interupts:
-            if interupt not in self.interupts:
-                val = coninterupt.poll()
+        for interrupt in self.tree.interrupts:
+            if interrupt not in self.interrupts:
+                val = coninterrupt.poll()
                 if val:
-                    if interupt.settings["Hard interupt"]:
-                        unconnectedhard.append((coninterupt, val))
+                    if interrupt.settings["Hard interrupt"]:
+                        unconnectedhard.append((coninterrupt, val))
                     else:
-                        unconnectedsoft.append((coninterupt, val))
+                        unconnectedsoft.append((coninterrupt, val))
         if len(unconnectedhard) > 0:
             return pickfromlist(unconnectedhard)
 
         """Check to see if the current state is still playing an animation"""
-        if self.currentframe < self.length - self.settings["Fade out"]:
-            # self.currentframe += 1
+        if self.currentframe < self.length - 2 - self.settings["Fade out"]:
+            print(self.currentframe, self.length, self.settings["Fade out"])
             return self
         # TODO Blender code needed in here to update the current frame
 
-        """Check to see if there are interupts to jump to that are soft"""
+        """Check to see if there are interrupts to jump to that are soft"""
         if len(connectedsoft) > 0:
             return pickfromlist(unconnectedhard)
 
         if len(unconnectedsoft) > 0:
             return pickfromlist(unconnectedsoft)
 
-        """If the animation is finished and no interupts look at connections"""
+        """If animation finished and no interrupts look at connections"""
         options = []
         for con in self.connected:
             val = con.poll()
@@ -218,7 +232,7 @@ class StateTree():
     """Contains all the states"""
     def __init__(self, brain):
         self.brain = brain
-        self.interupts = []
+        self.interrupts = []
         self.states = []
         self.active = []
         self.current = None
@@ -232,8 +246,9 @@ class StateTree():
             if self.current != cur:
                 self.current = cur
                 cur.moveto(userid)
+                # cur.active()
                 tmp.append(cur)
-                # print("Moving into new state", cur.__class__.__name__)
+                print("Moving into new state", cur.__class__.__name__)
         for active in self.active:
             if active.active():
                 tmp.append(active)
@@ -265,6 +280,8 @@ class Brain():
         self.reset()
         for name, var in self.lvars.items():
             var.setuser(userid)
+        for node in self.neurons.values():
+            node.newFrame()
         for out in self.outputs:
             self.neurons[out].evaluate()
         statetree.execute(userid)

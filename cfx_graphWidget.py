@@ -105,6 +105,8 @@ class GraphWidget(QtGui.QGraphicsView):
     def __init__(self):
         QtGui.QGraphicsView.__init__(self)
 
+        # TODO  add x=0 line
+
         self.timerId = 0
         self.scene = QtGui.QGraphicsScene()
         self.scene.setItemIndexMethod(QtGui.QGraphicsScene.NoIndex)
@@ -204,6 +206,7 @@ class GraphWidget(QtGui.QGraphicsView):
             self.nodes.append(item)
             self.scene.addItem(item)
         self.addCurves()
+
 
 class GraphEditor(QtGui.QWidget):
     def __init__(self):

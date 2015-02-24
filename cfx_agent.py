@@ -39,14 +39,14 @@ class Agent:
 
         """ap - absolute pos, p - change pos by, s - speed"""
         self.apx = D[blenderid].location[0]
-        self.px = D[blenderid].location[1]
-        self.sx = D[blenderid].location[2]
+        self.px = 0
+        self.sx = 0
 
-        self.apy = 0
+        self.apy = D[blenderid].location[1]
         self.py = 0
         self.sy = 0
 
-        self.apz = 0
+        self.apz = D[blenderid].location[2]
         self.pz = 0
         self.sz = 0
 
@@ -71,8 +71,6 @@ class Agent:
 
         self.external["tags"] = self.brain.tags
         self.agvars = self.brain.agvars
-
-        print(self.px, self.sx)
 
         move = mathutils.Vector((self.px + self.sx,
                                  self.py + self.sy,

@@ -37,16 +37,16 @@ def compilestatetree(toload, brain):
             else:
                 tree.current = item
                 tree.start = item
-        if item.interupt:
-            tree.interupts.append(item)
+        if item.interrupt:
+            tree.interrupts.append(item)
         tree.states.append(item)
         ref[nodeUID] = item
     if not tree.current and len(toload["nodes"]) > 0:
         raise Exception("Needs a start node")
     for edge in toload["edges"]:
         ref[edge["dest"]].connected.append(ref[edge["source"]])
-        if ref[edge["source"]].interupt:
-            reg[edge["dest"]].interupts.append(re[edge["source"]])
+        if ref[edge["source"]].interrupt:
+            reg[edge["dest"]].interrupts.append(re[edge["source"]])
     return tree
 
 

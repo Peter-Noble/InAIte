@@ -56,7 +56,7 @@ class Ground(Mc):
     def calcground(self):
         grounds = []
         for ag in self.sim.agents.values():
-            if "ground" in ag.access["tags"]:
+            if "Ground" in ag.access["tags"]:
                 grounds.append(sce.objects[ag.id])
         s = sce.objects[self.userid]
         results = []

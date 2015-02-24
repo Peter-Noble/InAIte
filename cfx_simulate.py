@@ -19,7 +19,7 @@ class Simulation():
     def __init__(self):
         self.registered = False
         self.agents = {}
-        self.lastframe = 1
+        self.framelast = 1
         self.compbrains = {}
         Noise = chan.Noise(self)
         Sound = chan.Sound(self)
@@ -49,31 +49,34 @@ class Simulation():
                 self.agents[name] = ag
 
     def step(self, scene):
-        print("NEWFRAME")
+        print("NEWFRAME", sce.frame_current)
         for agent in self.agents.values():
             for tag in agent.access["tags"]:
                 for channel in self.lvars:
                     if tag[:len(channel)] == channel:
                         self.lvars[channel].register(agent, tag[len(channel):],
                                                      agent.access["tags"][tag])
+        # TODO registering channels would be much more efficient if done
+        # straight after the agent is evaluated.
         for a in self.agents.values():
             a.step()
         for chan in self.lvars.values():
             chan.newframe()
 
-    def frame_change_handler(self, data):
+    def frameChangeHandler(self, scene):
         if self.framelast+1 == sce.frame_current:
-            self.step()
-            self.lastframe = sce.frame_current
+            self.step(scene)
+            self.framelast = sce.frame_current
 
-    def startframehandler(self):
+    def startFrameHandler(self):
+        print("Registering frame change handler")
         self.registered = True
         if self.step in bpy.app.handlers.frame_change_pre:
-            bpy.app.handlers.frame_change_pre.remove(self.step)
-        bpy.app.handlers.frame_change_pre.append(self.step)
+            bpy.app.handlers.frame_change_pre.remove(self.frameChangeHandler)
+        bpy.app.handlers.frame_change_pre.append(self.frameChangeHandler)
 
-    def stopframehandler(self):
+    def stopFrameHandler(self):
         if self.registered:
             print("Unregistering frame change handler")
-            bpy.app.handlers.frame_change_pre.remove(self.step)
+            bpy.app.handlers.frame_change_pre.remove(self.frameChangeHandler)
             self.registered = False

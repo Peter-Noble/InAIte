@@ -194,10 +194,10 @@ class Node(QtGui.QGraphicsItem):
 
         # self.settings = collections.OrderedDict()
         if self.logicormotion == "logic":
-            self.settings = logictypes[self.category[0]].settings
+            self.settings = deepcopy(logictypes[self.category[0]].settings)
             self.displayname = "Logic"
         else:
-            self.settings = statetypes[self.category[0]].settings
+            self.settings = deepcopy(statetypes[self.category[0]].settings)
             self.displayname = "Motion"
 
     def addEdge(self, edge):
@@ -355,7 +355,7 @@ class Node(QtGui.QGraphicsItem):
 class LogicNode(Node):
     """Nodes that control behavour"""
     def __init__(self, graphWidget):
-        self.category = ("AND", [x for x in logictypes])
+        self.category = ("INPUT", [x for x in logictypes])
         self.logicormotion = "logic"
         # TODO make the default setting available somewhere better than this
         Node.__init__(self, graphWidget)

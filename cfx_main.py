@@ -178,7 +178,6 @@ class SCENE_OT_cfx_agents_populate(Operator):
                     else:
                         bpy.context.scene.cfx_agents_default.setno += 1
                         group = bpy.context.scene.cfx_agents_default.setno
-                print("cfx", cfx_brains)
                 item.type = 'N'
         bpy.ops.scene.cfx_groups_populate()
         return {'FINISHED'}
@@ -279,11 +278,14 @@ class SCENE_OT_cfx_start(Operator):
 
     def execute(self, context):
         global sim
+        if "sim" in globals():
+            sim.stopFrameHandler()
+            del sim
         sim = Simulation()
         sim.actions()
         for ag in bpy.context.scene.cfx_agents.coll:
             sim.newagent(ag.name)
-        sim.startframehandler()
+        sim.startFrameHandler()
         return {'FINISHED'}
 
 
@@ -293,7 +295,8 @@ class SCENE_OT_cfx_stop(Operator):
 
     def execute(self, context):
         global sim
-        sim.stopframehandler()
+        if "sim" in globals():
+            sim.stopFrameHandler()
         return {'FINISHED'}
 
 # =============== SIMULATION END ===============#

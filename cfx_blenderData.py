@@ -87,7 +87,6 @@ def cfx_brains_callback(scene, context):
     """Turns the brain data into a format that EnumProperty can take"""
     # print("Getting brains", cfx_brains)
     cfx_brains = bpy.context.scene.cfx_brains
-    # TODO work out what's going on with cfx_brains and bpy.con...cfx_brains
     lis = [(x.identify, x.dispname, x.brain,) for x in cfx_brains]
     return lis
 
