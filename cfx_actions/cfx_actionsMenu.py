@@ -96,17 +96,8 @@ class SCENE_PT_action(Panel):
         layout = self.layout
         sce = context.scene
 
-        # row = layout.row()
-
-        # row.label("")
-        # row.label("")
-        # row.label("Action")
-        # row.label("Motion")
-        # row.label("Subtracted")
-
         row = layout.row()
-        row.label("""All actions must have location and rotation
-        animated and scale unanimated""")
+        row.label("Actions must have location and rotation but not scale")
 
         row = layout.row()
 

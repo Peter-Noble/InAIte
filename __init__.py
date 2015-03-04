@@ -396,8 +396,10 @@ def register():
 def initialise():
     sce = bpy.context.scene
 
+    global Simulation
     from .cfx_simulate import Simulation
 
+    global runui
     from .cfx_gui import runui
 
     global unregisterAllTypes
