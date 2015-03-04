@@ -3,8 +3,8 @@ import math
 from PySide import QtCore, QtGui
 import collections
 from copy import deepcopy
-from . import cfx_nodeFunctions
-from .cfx_nodeFunctions import logictypes, statetypes
+import cfx_nodeFunctions
+from cfx_nodeFunctions import logictypes, statetypes
 
 MULTISELECTCOLOUR = QtGui.QColor(255, 204, 0)
 HIGHLIGHTCOLOUR = QtCore.Qt.yellow
@@ -580,7 +580,7 @@ class CfxEditor(QtGui.QGraphicsView):
 
         self.scale(scaleFactor, scaleFactor)
 
-    def addEdge(self, fromNode, toNode, multiselected=False):
+    def addEdge(self, fromNode, toNode):
         """decided which requests for new edges should be allowed"""
         if issubclass(fromNode.__class__, LogicNode):
             if issubclass(toNode.__class__, MotionNode):
@@ -596,8 +596,6 @@ class CfxEditor(QtGui.QGraphicsView):
                 if (fromNode == e.dest) and (toNode == e.source):
                     return None
         ed = Edge(toNode, fromNode)
-        if multiselected:
-            ed.multiselected = True
         self.edges.append(ed)
         self.scene.addItem(ed)
 
@@ -770,6 +768,7 @@ class CfxEditor(QtGui.QGraphicsView):
             item.multiselected = True
             self.nodes.append(item)
             self.scene.addItem(item)
+        print("toparent", toparent)
         for parent in toparent:
             frame = [x for x in self.nodes if x.UID == clashChange[parent[1]]]
             if len(frame) > 0:

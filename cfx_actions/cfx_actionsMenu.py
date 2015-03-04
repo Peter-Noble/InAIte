@@ -4,12 +4,14 @@ from bpy.props import IntProperty, EnumProperty, CollectionProperty
 from bpy.props import PointerProperty, BoolProperty, StringProperty
 from bpy.types import PropertyGroup, UIList, Panel, Operator
 
+sce = bpy.context.scene
+
 
 class action_entry(PropertyGroup):
     """The data structure for the action entries"""
     action = StringProperty()
-    # motion = StringProperty()
-    # subtracted = BoolProperty()
+    motion = StringProperty()
+    subtracted = BoolProperty()
     index = IntProperty(min=0)
 
 
@@ -75,8 +77,8 @@ class SCENE_UL_action(UIList):
             # layout.label(text=str(item.name))
             layout.prop(item, "name", text="Name")
             layout.prop_search(item, "action", bpy.data, "actions", text="")
-            # layout.prop_search(item, "motion", bpy.data, "actions", text="")
-            # layout.prop(item, "subtracted", text="")
+            layout.prop_search(item, "motion", bpy.data, "actions", text="")
+            layout.prop(item, "subtracted", text="")
             # this draws each row in the list. Each line is a widget
         elif self.layout_type in {'GRID'}:
             layout.alignment = 'CENTER'
@@ -96,21 +98,15 @@ class SCENE_PT_action(Panel):
         layout = self.layout
         sce = context.scene
 
-        # row = layout.row()
-
-        # row.label("")
-        # row.label("")
-        # row.label("Action")
-        # row.label("Motion")
-        # row.label("Subtracted")
-
-        row = layout.row()
-        row.label("""All actions must have location and rotation
-        animated and scale unanimated""")
-
         row = layout.row()
 
-        sce = bpy.context.scene
+        row.label("")
+        row.label("")
+        row.label("Action")
+        row.label("Motion")
+        row.label("Subtracted")
+
+        row = layout.row()
 
         row.template_list("SCENE_UL_action", "", sce.cfx_actions,
                           "coll", sce.cfx_actions, "index")
@@ -143,7 +139,7 @@ def action_register():
 
 
 def action_unregister():
-    # bpy.utils.unregister_module(__name__)
+    #bpy.utils.unregister_module(__name__)
     # del bpy.types.Scene.cfx_actions
     bpy.utils.unregister_class(SCENE_UL_action)
     bpy.utils.unregister_class(SCENE_PT_action)

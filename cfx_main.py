@@ -14,6 +14,31 @@ from bpy.props import IntProperty, EnumProperty, CollectionProperty
 from bpy.props import PointerProperty, BoolProperty, StringProperty
 from bpy.types import PropertyGroup, UIList, Panel, Operator
 
+sce = bpy.context.scene
+
+import sys
+path = r'''C:\Users\Peter\Documents\Hills road\Computing\A2\COMP4\CrowdFX'''
+sys.path.append(path)
+
+import cfx_simulate
+from cfx_simulate import Simulation
+
+import cfx_gui
+from cfx_gui import runui
+
+import cfx_blenderData
+setAllTypes = cfx_blenderData.setAllTypes
+unregisterAllTypes = cfx_blenderData.setAllTypes
+update_cfx_brains = cfx_blenderData.update_cfx_brains
+cfx_brains = []
+
+import cfx_actions
+action_register = cfx_actions.action_register
+action_unregister = cfx_actions.action_unregister
+
+import cfx_events
+event_register = cfx_events.event_register
+event_unregister = cfx_events.event_unregister
 
 # =============== GROUPS LIST START ===============#
 
@@ -39,20 +64,19 @@ class SCENE_OT_group_populate(Operator):
     def execute(self, context):
         groups = []
         toRemove = []
-        sce = context.scene
         for f in range(len(sce.cfx_groups.coll)):
-            name = context.scene.cfx_groups.coll[f].name
+            name = sce.cfx_groups.coll[f].name
             if name not in groups:
                 if name in [str(x.group) for x in sce.cfx_agents.coll]:
-                    groups.append(context.scene.cfx_groups.coll[f].name)
+                    groups.append(sce.cfx_groups.coll[f].name)
             else:
                 toRemove.append(f)
         for f in reversed(toRemove):
-            context.scene.cfx_groups.coll.remove(f)
-        for agent in context.scene.cfx_agents.coll:
+            sce.cfx_groups.coll.remove(f)
+        for agent in sce.cfx_agents.coll:
             if str(agent.group) not in groups:
                 groups.append(str(agent.group))
-                item = context.scene.cfx_groups.coll.add()
+                item = sce.cfx_groups.coll.add()
                 item.name = str(agent.group)
                 item.type = 'N'
         return {'FINISHED'}
@@ -111,15 +135,10 @@ class SCENE_UL_agents(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data,
                   active_propname):
         if self.layout_type in {'DEFAULT', 'COMPACT'}:
-            if item.name in context.scene.objects:
-                ic = 'OBJECT_DATA'
-            else:
-                ic = 'ERROR'
+            ic = 'OBJECT_DATA' if item.name in sce.objects else 'ERROR'
             layout.prop_search(item, "name", bpy.data, "objects")
             layout.prop(item, "group", text="")
-            typ = [g.type for g in bpy.context.scene.cfx_groups.coll
-                   if int(g.name) == item.group][0]
-            layout.label(text=typ)
+            layout.label(text=item.type)
             # this draws each row in the list. Each line is a widget
         elif self.layout_type in {'GRID'}:
             layout.alignment = 'CENTER'
@@ -141,9 +160,6 @@ class SCENE_OT_cfx_agents_populate(Operator):
                 i += 1
 
     def execute(self, context):
-        from .cfx_blenderData import setAllTypes
-        setAllTypes()
-
         ag = [x.name for x in bpy.context.scene.cfx_agents.coll]
 
         if bpy.context.scene.cfx_agents_default.startType == "Next":
@@ -157,7 +173,7 @@ class SCENE_OT_cfx_agents_populate(Operator):
                 item.name = i.name
                 item.group = group
                 if bpy.context.scene.cfx_agents_default.contType == "Inc":
-                    if context.scene.cfx_agents_default.startType == "Next":
+                    if sce.cfx_agents_default.startType == "Next":
                         group = self.findNext()
                     else:
                         bpy.context.scene.cfx_agents_default.setno += 1
@@ -217,10 +233,7 @@ class SCENE_UL_selected(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data,
                   active_propname):
         if self.layout_type in {'DEFAULT', 'COMPACT'}:
-            if item.name in context.scene.objects:
-                ic = 'OBJECT_DATA'
-            else:
-                ic = 'ERROR'
+            ic = 'OBJECT_DATA' if item.name in sce.objects else 'ERROR'
             layout.prop(item, "name", text="", emboss=False, icon=ic)
             # this draws each row in the list. Each line is a widget
         elif self.layout_type in {'GRID'}:
@@ -289,10 +302,6 @@ class SCENE_OT_cfx_stop(Operator):
 # =============== SIMULATION END ===============#
 
 
-global initialised
-initialised = False
-
-
 class SCENE_PT_crowdfx(Panel):
     """Creates CrowdFX Panel in the scene properties window"""
     bl_label = "CrowdFX"
@@ -302,10 +311,6 @@ class SCENE_PT_crowdfx(Panel):
     bl_context = "scene"
 
     def draw(self, context):
-        global initialised
-        if not initialised:
-            initialised = True
-            initialise()
         layout = self.layout
         sce = context.scene
 
@@ -375,36 +380,9 @@ def register():
     bpy.utils.register_module(__name__)
     # I think this registers the SCENE_PT_crowdfx class...
     # ...or maybe all the classes in the file?
-
-    global action_register
-    from .cfx_actions import action_register
-    global action_unregister
-    from .cfx_actions import action_unregister
-
-    global event_register
-    from .cfx_events import event_register
-    global event_unregister
-    from .cfx_events import event_unregister
-
-    from .cfx_blenderData import registerTypes
-
-    registerTypes()
     action_register()
     event_register()
-
-
-def initialise():
-    sce = bpy.context.scene
-
-    from .cfx_simulate import Simulation
-
-    from .cfx_gui import runui
-
-    global unregisterAllTypes
-    from .cfx_blenderData import unregisterAllTypes
-    global update_cfx_brains
-    from .cfx_blenderData import update_cfx_brains
-
+    setAllTypes()
     global cfx_brains
     cfx_brains = bpy.context.scene.cfx_brains
 

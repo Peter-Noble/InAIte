@@ -6,18 +6,57 @@ from bpy.types import PropertyGroup, UIList, Panel, Operator
 # =============== DATA START===============#
 
 d = [('N', 'None', """{'edges': [], 'nodes': {}}"""),
-     ('G', 'Ground', """{'edges': [{'source': 0, 'dest': 1}], 'nodes': {0:
-      {'frameparent': (None,), 'posx': 0.0, 'category': ('SETTAG', ['INPUT',
-      'GRAPH', 'AND', 'OR', 'QUERYTAG', 'SETTAG', 'VARIABLE', 'MAP', 'OUTPUT',
-      'EVENT', 'PYTHON', 'PRINT']), 'posy': 0.0, 'settings':
-      OrderedDict([('Tag', 'Ground'), ('Use threshold', True), ('Threshold',
-      0.0), ('Action', ('Add', ('Add', 'Remove'))), ('Value', 1)]),
-      'UID': 0, 'displayname': 'settag Ground', 'type': 'LogicNode'},
-      1: {'frameparent': (None,), 'posx': -192.0, 'category': ('INPUT',
-      ['INPUT', 'GRAPH', 'AND', 'OR', 'QUERYTAG', 'SETTAG', 'VARIABLE',
-      'MAP', 'OUTPUT', 'EVENT', 'PYTHON', 'PRINT']), 'posy': -0.9, 'settings':
-      OrderedDict([('Input', '1')]), 'UID': 1, 'displayname': '1',
-      'type': 'LogicNode'}}}""".replace("/n", ""))]
+     ('J', 'test', """{'nodes':
+      {0: {'displayname': 'Node',
+           'posx': -155.0,
+           'type': 'LogicNode',
+           'category': ('PYTHON', ['AND', 'OR', 'PYTHON', 'PRINT',
+                                   'MAP', 'OUTPUT', 'INPUT']),
+           'UID': 0,
+           'frameparent': None,
+           'settings': OrderedDict([('Expression',
+                                     {'value': 'output = Noise.random/10',
+                                      'type': 'MLEdit'})]),
+           'posy': -110.0},
+       1: {'displayname': 'Node',
+           'posx': 21.25,0
+           'type': 'LogicNode',
+           'category': ('OUTPUT', ['AND', 'OR', 'PYTHON', 'PRINT',
+                        'MAP', 'OUTPUT', 'INPUT']),
+           'UID': 1,
+           'frameparent': None,
+           'settings': OrderedDict([('Output', ('rz', ('rx', 'ry', 'rz',
+                                                       'px', 'py', 'pz'))),
+                                    ('Multi input type',
+                                     ('Average', ('Average', 'Max')))]),
+           'posy': -107.5},
+       2: {'displayname': 'Node',
+           'posx': 56.25,
+           'type': 'LogicNode',
+           'category': ('OUTPUT', ['AND', 'OR', 'PYTHON', 'PRINT',
+                                   'MAP', 'OUTPUT', 'INPUT']),
+           'UID': 2,
+           'frameparent': None,
+           'settings': OrderedDict([('Output', ('py', ('rx', 'ry', 'rz',
+                                                       'px', 'py', 'pz'))),
+                                    ('Multi input type',
+                                     ('Average', ('Average', 'Max')))]),
+           'posy': 70.0},
+       3: {'displayname': 'Node',
+           'posx': -156.25,
+           'type': 'LogicNode',
+           'category': ('PYTHON', ['AND', 'OR', 'PYTHON', 'PRINT',
+                                   'MAP', 'OUTPUT', 'INPUT']),
+           'UID': 3,
+           'frameparent': None,
+           'settings': OrderedDict([('Expression', {'value': 'output = 0.05',
+                                                    'type': 'MLEdit'})]),
+           'posy': 65.0}
+       },
+         'edges': [{'source': 1, 'dest': 0},
+                   {'source': 2, 'dest': 3}]
+         }""".replace("\n", "").replace(" ", "")
+      )]
 
 default_slots = d
 
@@ -32,6 +71,8 @@ class brain_entry(PropertyGroup):
 def setCfxBrains():
     """loads the brains from the .blend or creates them if they don't already
     exist"""
+    global cfx_brains
+    bpy.types.Scene.cfx_brains = CollectionProperty(type=brain_entry)
     for b in default_slots:
         if b[0] not in [b.identify for b in bpy.context.scene.cfx_brains]:
             item = bpy.context.scene.cfx_brains.add()
@@ -109,7 +150,6 @@ class group_entry(PropertyGroup):
         update=GroupChange
     )
     group = IntProperty(min=0)
-    # TODO the group isn't actually used... it's the name that is used
 
 
 class groups_collection(PropertyGroup):
@@ -124,6 +164,14 @@ def setCfxGroups():
 
 def update_cfx_brains(brains):
     """passed to the GUI so that it can update the brain types"""
+
+    """import subprocess
+    def copy2clip(txt):
+       cmd='echo '+txt.strip()+'|clip'
+       return subprocess.check_call(cmd, shell=True)
+
+    copy2clip(str(brains))"""
+
     cfx_brains = bpy.context.scene.cfx_brains
     idents = {}
     for x in cfx_brains:
@@ -140,7 +188,7 @@ def update_cfx_brains(brains):
             item.identify = bb[0]
             item.dispname = bb[1]
             item.brain = bb[2]
-    setCfxBrains()
+    setAllTypes()
     for g in bpy.context.scene.cfx_groups.coll:
         if g.type not in [x.identify for x in cfx_brains]:
             g.type = cfx_brains[0][1]
@@ -149,7 +197,7 @@ def update_cfx_brains(brains):
 registered = False
 
 
-def registerTypes():
+def setAllTypes():
     """register all types"""
     global registered
     if not registered:
@@ -163,9 +211,9 @@ def registerTypes():
         bpy.utils.register_class(group_entry)
         bpy.utils.register_class(groups_collection)
         registered = True
-        setCfxGroups()
-        setCfxAgents()
-        bpy.types.Scene.cfx_brains = CollectionProperty(type=brain_entry)
+        setCfxBrains()
+    setCfxGroups()
+    setCfxAgents()
 
 
 def unregisterAllTypes():

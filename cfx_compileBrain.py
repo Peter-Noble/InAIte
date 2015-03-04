@@ -1,11 +1,10 @@
-from .cfx_nodeFunctions import logictypes, statetypes
+from cfx_nodeFunctions import logictypes, statetypes
 from collections import OrderedDict
-from .cfx_brainClasses import Neuron, Brain, State, StateTree
+from cfx_brainClasses import Neuron, Brain, State, StateTree
 import functools
 
 
 def processstring(toloadtext):
-    """Turn the string that is stored in the Blend"""
     toload = eval(toloadtext)
     output = {"LogicNode": {"nodes": {},
                             "edges": []},

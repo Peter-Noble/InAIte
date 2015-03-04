@@ -1,4 +1,4 @@
-from . import cfx_channels as chan
+import cfx_channels as chan
 import PySide
 import random
 import functools
@@ -12,12 +12,11 @@ class Impulse():
         self.key = tup[0]
         self.val = tup[1]
 
-    """def __getitem__(self, key):
+    def __getitem__(self, key):
         if key == 0:
             return self.key
         if key == 1:
-            return self.val"""
-    # I don't think this is needed... but it might be
+            return self.val
 
 
 class ImpulseContainer():
@@ -28,18 +27,14 @@ class ImpulseContainer():
         if key in self.cont:
             return self.cont[key]
 
-    """def __setitem__(self, key, value):
+    def __setitem__(self, key, value):
         self.cont[key] = value
 
     def __delitem__(self, key):
-        del self.cont[key]"""
-    # This shouldn't be allowed but commented because I'm not sure if this
-    # is used anywhere
+        del self.cont[key]
 
     def __iter__(self):
         return iter([Impulse(x) for x in self.cont.items()])
-        # This gets calculated every time the input is looked at
-        # Better to calculate in __init__?
 
     def __contains__(self, item):
         return item in self.cont
@@ -53,7 +48,7 @@ class Neuron():
         self.inputs = []
         # self.parent = None
         self.result = None
-        # self.active = True # Don't think this is used???
+        self.active = True
 
     def evaluate(self):
         """Called by any neurons that take this neuron as an input"""
@@ -112,7 +107,7 @@ class State():
         self.currentframe = 0
         act = self.settings["Action"]  # STRING
         if act in self.tree.brain.sim.actions:
-            actionobj = self.tree.brain.sim.actions[act]  # from .cfx_motion.py
+            actionobj = self.tree.brain.sim.actions[act]  # from cfx_motion.py
             obj = sce.objects[userid]  # bpy object
             tr = obj.animation_data.nla_tracks.new()  # NLA track
             action = actionobj.action  # bpy action
@@ -166,7 +161,7 @@ class State():
             elif len(options) > 0:
                 """If there is more than one possible jump select one randomly
                 weighted by the value that polling them returned"""
-                """so = sorted(options, key=lambda v: v[1])
+                so = sorted(options, key=lambda v: v[1])
                 final = [x for x in so if x[1] == so[0][1]]
                 if len(final) == 1:
                     return final[0][0]
@@ -180,10 +175,7 @@ class State():
                 rnd = random.random() * running_total
                 for i, total in enumerate(totals):
                     if rnd < total:
-                        return final[i][0]"""
-                # I don't think this should be random
-                # The user can add random with a random input node
-                return sorted(options, key=lambda v: v[1])[0][0]
+                        return final[i][0]
 
         """Check if there are any connected interrupts to jump to"""
         connectedhard = []
@@ -213,7 +205,9 @@ class State():
 
         """Check to see if the current state is still playing an animation"""
         if self.currentframe < self.length - 2 - self.settings["Fade out"]:
+            print(self.currentframe, self.length, self.settings["Fade out"])
             return self
+        # TODO Blender code needed in here to update the current frame
 
         """Check to see if there are interrupts to jump to that are soft"""
         if len(connectedsoft) > 0:
@@ -237,7 +231,6 @@ class State():
 class StateTree():
     """Contains all the states"""
     def __init__(self, brain):
-        # TODO each agent now has its own StateTree so userid could be stored
         self.brain = brain
         self.interrupts = []
         self.states = []
@@ -282,7 +275,6 @@ class Brain():
         self.agvars = self.sim.agents[self.currentuser].agvars
 
     def execute(self, userid, statetree):
-        # TODO could userid be replaced with self.currentuser?
         """Called for each time the agents needs to evaluate"""
         self.currentuser = userid
         self.reset()

@@ -1,4 +1,4 @@
-from .cfx_masterChannels import MasterChannel as Mc
+from cfx_channels.cfx_masterChannels import MasterChannel as Mc
 import math
 import mathutils
 import bpy

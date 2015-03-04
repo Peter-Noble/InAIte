@@ -4,12 +4,12 @@ from PySide import QtCore, QtGui
 import collections
 import functools
 import copy
-from . import cfx_nodeFunctions
-from .cfx_nodeFunctions import logictypes, statetypes
+import cfx_nodeFunctions
+from cfx_nodeFunctions import logictypes, statetypes
 
-# from .cfx_graphWidget import GraphEditor
+# from cfx_graphWidget import GraphEditor
 import imp
-from . import cfx_graphWidget
+import cfx_graphWidget
 imp.reload(cfx_graphWidget)
 GraphEditor = cfx_graphWidget.GraphEditor
 
@@ -111,14 +111,14 @@ class Properties(QtGui.QWidget):
                     row.addWidget(item)
                 elif isinstance(val, int):
                     item = QtGui.QSpinBox()
-                    item.setRange(-2**16, 2**16)
+                    item.setRange(-99999, 99999)
                     item.setValue(val)
                     item.valueChanged.connect(partial(self.updateProp,
                                               selected, prop))
                     row.addWidget(item)
                 elif isinstance(val, float):
                     item = QtGui.QDoubleSpinBox()
-                    item.setRange(-2**16, 2**16)
+                    item.setRange(-99999, 99999)
                     item.setValue(val)
                     item.valueChanged.connect(partial(self.updateProp,
                                               selected, prop))

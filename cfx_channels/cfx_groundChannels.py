@@ -4,7 +4,7 @@ sce = bpy.context.scene
 from math import *
 from mathutils import *
 
-from .cfx_masterChannels import MasterChannel as Mc
+from cfx_channels.cfx_masterChannels import MasterChannel as Mc
 
 
 class Ground(Mc):
