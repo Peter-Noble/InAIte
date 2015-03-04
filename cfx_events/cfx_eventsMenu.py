@@ -4,8 +4,6 @@ from bpy.props import IntProperty, EnumProperty, CollectionProperty
 from bpy.props import PointerProperty, BoolProperty, StringProperty
 from bpy.types import PropertyGroup, UIList, Panel, Operator
 
-sce = bpy.context.scene
-
 
 class event_entry(PropertyGroup):
     """The data structure for the event entries"""
@@ -100,6 +98,8 @@ class SCENE_PT_event(Panel):
         row.label("Events")
 
         row = layout.row()
+
+        sce = bpy.context.scene
 
         row.template_list("SCENE_UL_event", "", sce.cfx_events,
                           "coll", sce.cfx_events, "index")

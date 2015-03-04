@@ -1,48 +1,40 @@
 import bpy
 
-A = bpy.data.actions
-sce = bpy.context.scene
-
 
 class action:
-    def __init__(self, name, actionname, motionname, subtracted):
+    def __init__(self, name, actionname):
+        A = bpy.data.actions
+        sce = bpy.context.scene
+
         self.name = name
-        self.subtracted = subtracted
         self.actionname = actionname
-        if actionname in A:
-            self.action = A[self.actionname]
-            arange = self.action.frame_range
-            alen = arange[1] - arange[0] + 1
-        else:
-            self.action = None  # So that other code can do - if action.action
-            alen = 0
 
         self.motiondata = {}
 
-        self.motionname = motionname
-        if motionname in A:
-            self.motion = A[self.motionname]
-            mrange = self.motion.frame_range
-            mlen = mrange[1] - mrange[0] + 1
-            for c in self.motion.fcurves:
-                if c.data_path not in self.motiondata:
-                    self.motiondata[c.data_path] = []
-                self.motiondata[c.data_path].append([])
-                morange = self.motion.frame_range
-                for frame in range(int(morange[0]), int(morange[1])+1):
-                    val = c.evaluate(frame)
-                    self.motiondata[c.data_path][-1].append(val)
+        if actionname in A:
+            self.action = A[self.actionname]
+            arange = self.action.frame_range
+            self.length = arange[1] - arange[0] + 1
+            for c in range(6):
+                datapath = self.action.fcurves[c].data_path
+                if datapath not in self.motiondata:
+                    self.motiondata[datapath] = []
+                self.motiondata[datapath].append([])
+                for frame in range(int(arange[0]), int(arange[1])+1):
+                    self.motiondata[datapath].append([])
+                    val = self.action.fcurves[c].evaluate(frame)
+                    self.motiondata[datapath][-1].append(val)
+            # This assumes animation data for 3xlocation and 3xrotation
         else:
-            self.motion = None  # So that other code can do - if action.motion
-            mlen = 0
-
-        self.length = max(alen, mlen)
+            self.action = None  # So that other code can do - if action.action
+            self.length = 0
 
 
 def getmotions():
+    sce = bpy.context.scene
     result = {}
     for m in sce.cfx_actions.coll:
-        result[m.name] = action(m.name, m.action, m.motion, m.subtracted)
+        result[m.name] = action(m.name, m.action)
     return result
 
 

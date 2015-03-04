@@ -5,13 +5,13 @@ sce = bpy.context.scene
 O = sce.objects
 
 import sys
-from cfx_compileBrain import compileagent
+from .cfx_compileBrain import compileagent
 
-import cfx_channels as chan
+from . import cfx_channels as chan
 wr = chan.Wrapper
 
-from cfx_agent import Agent
-from cfx_actions import getmotions
+from .cfx_agent import Agent
+from .cfx_actions import getmotions
 
 
 class Simulation():
