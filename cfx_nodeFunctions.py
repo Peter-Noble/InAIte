@@ -1,9 +1,9 @@
 from collections import OrderedDict
 import math
-import cfx_brainClasses
-from cfx_brainClasses import Neuron, State
-import cfx_pythonEmbededInterpreter
-from cfx_pythonEmbededInterpreter import Interpreter
+from . import cfx_brainClasses
+from .cfx_brainClasses import Neuron, State
+from . import cfx_pythonEmbededInterpreter
+from .cfx_pythonEmbededInterpreter import Interpreter
 import PySide
 from PySide import QtGui, QtCore
 import copy
@@ -18,8 +18,8 @@ class Logic{NAME}(Neuron):
                             ...])
     # value can be any of the following:
     #   bool - Check box
-    #   int - (±99999)
-    #   float - (±99999)
+    #   int - (±4294967296)
+    #   float - (±4294967296)
     #   str - Single line string
     #   tuple - For dropdown boxes
     #       In form (default, (default, option1, option2...))
@@ -29,8 +29,8 @@ class Logic{NAME}(Neuron):
     #       val["type"] == "Graph" - Graph for mapping a range of data to
                                     values between 0 and 1
 
-    colour = QtGui.QColor(PCol.green)
-    # The background colour of the node in the node editor
+    colour = QtGui.QColor(0, 0, 0)
+    # The background colour of the node in the node editor (R, G, B)
 
     def core(self, inps, settings):
         # This function is the actual processing that the node represents
@@ -79,6 +79,7 @@ class LogicGRAPH(Neuron):
                 num = ui
             else:
                 num = value
+            # Num is value clipped into the range li<=num<=ui
             lo = 0
             uo = 400
             num = ((uo - lo) / (ui - li)) * (num - li) + lo
@@ -90,6 +91,8 @@ class LogicGRAPH(Neuron):
                 else:
                     tmp[r[0]] = 100 - r[1]
             vals = sorted(tmp.items(), key=lambda x: x[0])
+            # vals is the list of points on the graph in x order and excluding
+            # any that are directly under another point
             c = 0
             previous = vals[0]
             while vals[c][0] < num:

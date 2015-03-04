@@ -1,15 +1,16 @@
 import sys
 import math
 from PySide import QtCore, QtGui
+warning = QtGui.QMessageBox.warning
 from collections import OrderedDict
-import cfx_compileBrain
-from cfx_compileBrain import compilebrain
+from . import cfx_compileBrain
+from .cfx_compileBrain import compilebrain
 
-from cfx_nodeEditor import CfxEditor, NODETYPES
+from .cfx_nodeEditor import CfxEditor, NODETYPES
 
-# from cfx_propertiesEditor import Properties
+# from .cfx_propertiesEditor import Properties
 import imp
-import cfx_propertiesEditor
+from . import cfx_propertiesEditor
 imp.reload(cfx_propertiesEditor)
 Properties = cfx_propertiesEditor.Properties
 
@@ -94,6 +95,17 @@ class Window(QtGui.QMainWindow):
 
         def saveas(win, func):
             saveto = QtGui.QInputDialog.getText(win, "Save to", "Name")[0]
+            if saveto == "":
+                return
+            if saveto[0] in [x[0] for x in win.saveslots]:
+                name = [x for x in win.saveslots if x[0] == saveto[0]][0]
+                Yes = QtGui.QMessageBox.Yes
+                No = QtGui.QMessageBox.No
+                r = QtGui.QMessageBox.question(self, 'Save over',
+                                               "Save over" + name + "?",
+                                               Yes | No, No)
+                if r == No:
+                    return
             savedata = func()
             win.saveslots[saveto] = savedata.__str__()
             win.lastsaved = savedata
@@ -116,19 +128,16 @@ class Window(QtGui.QMainWindow):
             loadn, use = QtGui.QInputDialog.getItem(win, "Load from",
                                                     "From",
                                                     list(win.saveslots.keys()))
-            win.main.CfxEditor.load(eval(win.saveslots[loadn]))
-            win.current = loadn
+            if use:
+                if loadn in win.saveslots:
+                    win.main.CfxEditor.load(eval(win.saveslots[loadn]))
+                    win.current = loadn
+                else:
+                    warning(self, "Load failed", "There is no " + loadn)
 
         def reset(win):
             win.main.CfxEditor.resetGraph()
             win.current = None
-
-        def executebrain(win):
-            # ONLY TEMPORY until the Blender plugin can do this for itself
-            loadn, use = QtGui.QInputDialog.getItem(win, "Load from", "From",
-                                                    list(win.saveslots.keys()))
-            compilebrain(win.saveslots[loadn]).execute("RANDOM USER ID")
-            #  TODO replace the RANDOM USER ID with something that works
 
         exitAction = QtGui.QAction("&Exit", self)
         exitAction.triggered.connect(self.close)
@@ -148,9 +157,6 @@ class Window(QtGui.QMainWindow):
         loadfromaction = QtGui.QAction("&Load from", self)
         loadfromaction.triggered.connect(lambda: loadfrom(self))
 
-        executefromaction = QtGui.QAction("&Execute from", self)
-        executefromaction.triggered.connect(lambda: executebrain(self))
-
         menubar = self.menuBar()
         fileMenu = menubar.addMenu("&File")
         fileMenu.addAction(exitAction)
@@ -158,7 +164,6 @@ class Window(QtGui.QMainWindow):
         fileMenu.addAction(saveAction)
         fileMenu.addAction(saveasaction)
         fileMenu.addAction(loadfromaction)
-        fileMenu.addAction(executefromaction)
 
         def saveSnippet(win, func):
             textbox = QtGui.QTextEdit()
@@ -169,6 +174,12 @@ class Window(QtGui.QMainWindow):
         def insertSnippet(win):
             loadn, use = QtGui.QInputDialog.getText(win, "Insert snippet",
                                                     "Snippet")
+            try:
+                eval(loadn)
+            except:
+                warning(self, "Snippet warning",
+                        """The snippet you inserted is not a valid python
+                        expression""")
             win.main.CfxEditor.insert(eval(loadn))
 
         saveSnippetAction = QtGui.QAction("&Save snippet", self)

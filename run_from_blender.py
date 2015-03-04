@@ -4,7 +4,7 @@ for f in range(30):
 import bpy
 
 import sys
-path = r'''C:\Users\Peter\Documents\Hills road\Computing\A2\COMP4\CrowdFX'''
+path = r'''C:\Users\Peter\Documents\Hills road\Computing\A2\COMP4'''
 sys.path.append(path)
 
 import imp
@@ -24,7 +24,7 @@ def rreload(module):
             if attribute not in done and attribute.__name__[:3] == "cfx":
                 rreload(attribute)
 
-import cfx_main
-rreload(cfx_main)
-from cfx_main import bl_info, register, unregister
+import CrowdFX
+rreload(CrowdFX)
+from CrowdFX import bl_info, register, unregister
 register()
