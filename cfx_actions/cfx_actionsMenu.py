@@ -8,7 +8,7 @@ from bpy.types import PropertyGroup, UIList, Panel, Operator
 class action_entry(PropertyGroup):
     """The data structure for the action entries"""
     action = StringProperty()
-    # motion = StringProperty()
+    motion = StringProperty()
     # subtracted = BoolProperty()
     index = IntProperty(min=0)
 
@@ -75,7 +75,7 @@ class SCENE_UL_action(UIList):
             # layout.label(text=str(item.name))
             layout.prop(item, "name", text="Name")
             layout.prop_search(item, "action", bpy.data, "actions", text="")
-            # layout.prop_search(item, "motion", bpy.data, "actions", text="")
+            layout.prop_search(item, "motion", bpy.data, "actions", text="")
             # layout.prop(item, "subtracted", text="")
             # this draws each row in the list. Each line is a widget
         elif self.layout_type in {'GRID'}:

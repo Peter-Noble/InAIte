@@ -153,10 +153,10 @@ class Edge(QtGui.QGraphicsItem):
         else:
             painter.setPen(QtGui.QPen(QtCore.Qt.black))
         if self.multiselected:
-            painter.setPen(QtGui.QPen(MULTISELECTCOLOUR, 4))
+            painter.setPen(QtGui.QPen(MULTISELECTCOLOUR, 2))
         if self.selected:
-            painter.setPen(QtGui.QPen(painter.pen().color().darker(), 4))
-        painter.drawEllipse(line.pointAt(0.5), 6, 6)
+            painter.setPen(QtGui.QPen(painter.pen().color().darker(), 2))
+        painter.drawEllipse(line.pointAt(0.5), 4, 4)
 
 
 class Node(QtGui.QGraphicsItem):
@@ -782,7 +782,8 @@ class CfxEditor(QtGui.QGraphicsView):
             nodeUIDs = [x.UID for x in self.nodes]
             if source in nodeUIDs and dest in nodeUIDs:
                 self.addEdge([x for x in self.nodes if x.UID == dest][0],
-                             [x for x in self.nodes if x.UID == source][0])
+                             [x for x in self.nodes if x.UID == source][0],
+                             multiselected=True)
         Rect = self.scene.itemsBoundingRect()
         self.scene.setSceneRect(Rect)
 

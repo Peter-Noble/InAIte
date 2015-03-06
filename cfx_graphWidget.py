@@ -4,6 +4,7 @@ from PySide import QtCore, QtGui
 
 
 class Curve(QtGui.QGraphicsItem):
+    """The lines that connect the points on the graph"""
     def __init__(self, gofrom, goto):
         QtGui.QGraphicsItem.__init__(self)
         self.goto = goto
@@ -38,6 +39,7 @@ class Curve(QtGui.QGraphicsItem):
 
 
 class Node(QtGui.QGraphicsItem):
+    """The points on the graph"""
     Type = QtGui.QGraphicsItem.UserType + 1
 
     def __init__(self, graphWidget):
@@ -51,6 +53,12 @@ class Node(QtGui.QGraphicsItem):
         self.setZValue(-1)
 
         self.goingto = self.pos()
+
+    def showToolTip(self):
+        x = (self.scenePos().x() - 200) / 200
+        y = (self.scenePos().y() - 100) / 100
+        if self.toolTip() != "{0}, {1}".format(x, y):
+            self.setToolTip("{0}, {1}".format(x, y))
 
     def check(self):
         if not self.scene() or self.scene().mouseGrabberItem() is self:
@@ -81,6 +89,7 @@ class Node(QtGui.QGraphicsItem):
         return QtGui.QGraphicsItem.itemChange(self, change, value)
 
     def mouseMoveEvent(self, event):
+        self.showToolTip()
         QtGui.QGraphicsItem.mouseMoveEvent(self, event)
 
     def mouseReleaseEvent(self, event):
@@ -100,6 +109,7 @@ class Node(QtGui.QGraphicsItem):
 
 
 class GraphWidget(QtGui.QGraphicsView):
+    """For editing graphs as a property of a node"""
     graphChanged = QtCore.Signal()
 
     def __init__(self):
@@ -203,12 +213,16 @@ class GraphWidget(QtGui.QGraphicsView):
         for node in data[1]:
             item = Node(self)
             item.setPos(node[0], node[1])
+            x = (node[0] - 200) / 200
+            y = (node[1] - 100) / 100
+            item.setToolTip("{0}, {1}".format(x, y))
             self.nodes.append(item)
             self.scene.addItem(item)
         self.addCurves()
 
 
 class GraphEditor(QtGui.QWidget):
+    """Contains the graph viewer so it can be added to properties editor"""
     def __init__(self):
         QtGui.QWidget.__init__(self)
 
@@ -219,6 +233,7 @@ class GraphEditor(QtGui.QWidget):
 
 
 if __name__ == "__main__":
+    """For testing purposes"""
     app = QtGui.QApplication(sys.argv)
     QtCore.qsrand(QtCore.QTime(0, 0, 0).secsTo(QtCore.QTime.currentTime()))
 

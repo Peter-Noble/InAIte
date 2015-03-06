@@ -87,7 +87,7 @@ class Window(QtGui.QMainWindow):
         # self.saveslots = {}
         self.saveslots = {}
         for b in loadbrains:
-            self.saveslots[b.identify+b.dispname] = b.brain
+            self.saveslots[b.dispname] = b.brain
 
         self.current = None  # index of the currently open tree
 
@@ -97,12 +97,12 @@ class Window(QtGui.QMainWindow):
             saveto = QtGui.QInputDialog.getText(win, "Save to", "Name")[0]
             if saveto == "":
                 return
-            if saveto[0] in [x[0] for x in win.saveslots]:
-                name = [x for x in win.saveslots if x[0] == saveto[0]][0]
+            if saveto in win.saveslots:
+                """If the name clashes with an exiting one show a warning"""
                 Yes = QtGui.QMessageBox.Yes
                 No = QtGui.QMessageBox.No
                 r = QtGui.QMessageBox.question(self, 'Save over',
-                                               "Save over" + name + "?",
+                                               "Save over " + saveto + "?",
                                                Yes | No, No)
                 if r == No:
                     return
@@ -114,7 +114,7 @@ class Window(QtGui.QMainWindow):
             """assemble the save data and send it back to blender"""
             saves = []
             for item in self.saveslots:
-                saves.append((item[0], item[1:], self.saveslots[item]))
+                saves.append((item[0], item, self.saveslots[item]))
             saves = tuple(saves)
             self.updatesaves(saves)
 

@@ -68,6 +68,7 @@ class Ground(Mc):
             """Get the result with the shortest distance to the ground"""
             output = results[0]
             for r in results[1:]:
+                # TODO doesn't output[0] need to be output[0][2]???
                 if output[0]-s.location[2] < r[0][2]-s.location[2]:
                     output = r
             self.store["location"] = output[0]

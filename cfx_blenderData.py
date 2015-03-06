@@ -33,7 +33,7 @@ def setCfxBrains():
     """loads the brains from the .blend or creates them if they don't already
     exist"""
     for b in default_slots:
-        if b[0] not in [b.identify for b in bpy.context.scene.cfx_brains]:
+        if b[1] not in [b.dispname for b in bpy.context.scene.cfx_brains]:
             item = bpy.context.scene.cfx_brains.add()
             item.identify = b[0]
             item.dispname = b[1]
@@ -127,15 +127,15 @@ def update_cfx_brains(brains):
     cfx_brains = bpy.context.scene.cfx_brains
     idents = {}
     for x in cfx_brains:
-        idents[x.identify] = x
-    print("brains", brains)
+        idents[x.dispname] = x
+    # print("brains", brains)
     for bb in brains:
-        if bb[0] in idents:
-            print("Brain", bb[0], "modified")
-            idents[bb[0]].dispname = bb[1]
-            idents[bb[0]].brain = bb[2]
+        if bb[1] in idents:
+            # print("Brain", bb[0], "modified")
+            idents[bb[1]].identify = bb[0]
+            idents[bb[1]].brain = bb[2]
         else:
-            print("New brain", bb[0], "added")
+            # print("New brain", bb[0], "added")
             item = cfx_brains.add()
             item.identify = bb[0]
             item.dispname = bb[1]

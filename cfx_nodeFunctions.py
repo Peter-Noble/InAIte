@@ -118,6 +118,7 @@ class LogicGRAPH(Neuron):
                     else:
                         if settings["Interpolation type"][0] == "linear":
                             output[i.key] = linear(i.val)
+                        # cubic bezier could also be an option here
         return output
 
 
@@ -145,7 +146,8 @@ class LogicAND(Neuron):
 
 
 class LogicOR(Neuron):
-    """returns the maximum value"""
+    """If any of the values are high return a high value
+    1 - ((1-a) * (1-b) * (1-c)...)"""
     settings = OrderedDict([("Single output", True)])
     colour = QtGui.QColor(153, 204, 0)
 
@@ -287,6 +289,7 @@ class LogicOUTPUT(Neuron):
 
 
 class LogicEVENT(Neuron):
+    """Check if an event is happening that frame"""
     settings = OrderedDict([("Event name", "default")])
     colour = QtGui.QColor(255, 153, 102)
 
@@ -324,9 +327,11 @@ class LogicPRINT(Neuron):
     colour = QtGui.QColor(255, 255, 255)
 
     def core(self, inps, settings):
-        for into in inps:
-            for i in into:
-                print("PRINT NODE", settings["Label"], ">>", i.key, i.val)
+        selected = [o.name for o in bpy.context.selected_objects]
+        if self.brain.currentuser in selected:
+            for into in inps:
+                for i in into:
+                    print(settings["Label"], ">>", i.key, i.val)
         return 1
 
 Inter = Interpreter()
@@ -379,6 +384,7 @@ class StateSTART(State):
 
 
 class StateSTD(State):
+    """The normal state in a state machine"""
     settings = OrderedDict([("Action", ""),
                             ("Trigger", "default"),
                             ("Fade in", 0),

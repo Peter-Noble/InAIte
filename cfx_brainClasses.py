@@ -119,17 +119,15 @@ class State():
             if action:
                 strip = tr.strips.new("", sce.frame_current, action)
                 strip.extrapolation = 'HOLD_FORWARD'
-                strip.use_auto_blend = False
-                # This needs replacing with fade values from the nodes
+                strip.use_auto_blend = True
             self.length = actionobj.length
-            if not actionobj.subtracted:
-                tr = obj.animation_data.nla_tracks.new()  # NLA track
-                action = actionobj.motion
-                if action:
-                    strip = tr.strips.new("", sce.frame_current, action)
-                    strip.extrapolation = 'HOLD_FORWARD'
-                    strip.use_auto_blend = False
-                    strip.blend_type = 'SUBTRACT'
+            tr = obj.animation_data.nla_tracks.new()  # NLA track
+            action = actionobj.motion
+            if action:
+                strip = tr.strips.new("", sce.frame_current, action)
+                strip.extrapolation = 'HOLD_FORWARD'
+                strip.use_auto_blend = False
+                strip.blend_type = 'ADD'
 
     def active(self):
         self.currentframe += 1

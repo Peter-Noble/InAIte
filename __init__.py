@@ -141,8 +141,8 @@ class SCENE_OT_cfx_agents_populate(Operator):
                 i += 1
 
     def execute(self, context):
-        from .cfx_blenderData import setAllTypes
-        setAllTypes()
+        from .cfx_blenderData import setCfxBrains
+        setCfxBrains()
 
         ag = [x.name for x in bpy.context.scene.cfx_agents.coll]
 
@@ -294,7 +294,8 @@ initialised = False
 
 
 class SCENE_PT_crowdfx(Panel):
-    """Creates CrowdFX Panel in the scene properties window"""
+    """Creates CrowdFX Panel in the scene properties window. The first panel
+    that this add-on creates"""
     bl_label = "CrowdFX"
     bl_idname = "SCENE_PT_crowdfx"
     bl_space_type = 'PROPERTIES'
@@ -372,6 +373,8 @@ class SCENE_PT_crowdfx(Panel):
 
 
 def register():
+    """Called by Blender to setup the script. Analogous to the constructor of
+    an object but for the add-on instead"""
     bpy.utils.register_module(__name__)
     # I think this registers the SCENE_PT_crowdfx class...
     # ...or maybe all the classes in the file?
@@ -394,6 +397,7 @@ def register():
 
 
 def initialise():
+    """Make the classes and functions needed from other files available"""
     sce = bpy.context.scene
 
     global Simulation
@@ -412,6 +416,8 @@ def initialise():
 
 
 def unregister():
+    """Called by Blender to remove the add-on. Analogous to the destructor of
+    an object but for the add-on instead"""
     bpy.utils.unregister_module(__name__)
     # ...and this one unregisters the SCENE_PT_crowdfx
     action_unregister()
