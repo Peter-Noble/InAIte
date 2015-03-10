@@ -103,11 +103,12 @@ class State():
         self.currentframe = 0
         self.length = 0
 
-    def poll(self):
+    def query(self):
         """If this state is a valid next move return float > 0"""
         return 1.0
 
     def moveto(self, userid):
+        # print("moveto called")
         """Called when the current state moves to this node"""
         self.currentframe = 0
         act = self.settings["Action"]  # STRING
@@ -121,18 +122,20 @@ class State():
                 strip.extrapolation = 'HOLD_FORWARD'
                 strip.use_auto_blend = True
             self.length = actionobj.length
-            tr = obj.animation_data.nla_tracks.new()  # NLA track
+            """tr = obj.animation_data.nla_tracks.new()  # NLA track
             action = actionobj.motion
             if action:
                 strip = tr.strips.new("", sce.frame_current, action)
                 strip.extrapolation = 'HOLD_FORWARD'
                 strip.use_auto_blend = False
-                strip.blend_type = 'ADD'
+                strip.blend_type = 'ADD'"""
 
-    def active(self):
-        self.currentframe += 1
-        if self.currentframe <= self.length:
-            fr = self.currentframe
+    def active(self, currentframe):
+        """Used for states that are still having an effect on the position
+        and animation but aren't the current state"""
+        # print("active called", self)
+        fr = currentframe + 1
+        if fr <= self.length:
             action = self.tree.brain.sim.actions[self.settings["Action"]]
             if "rotation_euler" in action.motiondata:
                 rot = action.motiondata["rotation_euler"]
@@ -146,9 +149,8 @@ class State():
                     self.tree.brain.outvars["px"] += loc[0][fr] - loc[0][fr-1]
                     self.tree.brain.outvars["py"] += loc[1][fr] - loc[1][fr-1]
                     self.tree.brain.outvars["pz"] += loc[2][fr] - loc[2][fr-1]
-            return True
+            return fr
         else:
-            self.currentframe = 0
             return False
 
     # def evaluateparent(self):
@@ -156,6 +158,7 @@ class State():
     #     return self.currentframe != 0
 
     def evaluate(self):
+        # print("Evaluating state", self)
         """Return the state to move to (allowed to return itself)"""
         def pickfromlist(options):
             """options in form [(state, value)]"""
@@ -163,7 +166,7 @@ class State():
                 return options[0][0]
             elif len(options) > 0:
                 """If there is more than one possible jump select one randomly
-                weighted by the value that polling them returned"""
+                weighted by the value that querying them returned"""
                 """so = sorted(options, key=lambda v: v[1])
                 final = [x for x in so if x[1] == so[0][1]]
                 if len(final) == 1:
@@ -181,52 +184,63 @@ class State():
                         return final[i][0]"""
                 # I don't think this should be random
                 # The user can add random with a random input node
-                return sorted(options, key=lambda v: v[1])[0][0]
+                return sorted(options, key=lambda v: v[1])[-1][0]
+
+        self.currentframe += 1
 
         """Check if there are any connected interrupts to jump to"""
         connectedhard = []
         connectedsoft = []
         for coninterrupt in self.interrupts:
-            val = coninterrupt.poll()
+            val = coninterrupt.query()
             if val:
                 if interrupt.settings["Hard interrupt"]:
                     connectedhard.append((coninterrupt, val))
                 else:
                     connectedsoft.append((coninterrupt, val))
         if len(connectedhard) > 0:
+            # print("Return 1")
             return pickfromlist(connectedhard)
         """Check if there are any unconnected interrupts to jump to"""
         unconnectedhard = []
         unconnectedsoft = []
         for interrupt in self.tree.interrupts:
             if interrupt not in self.interrupts:
-                val = coninterrupt.poll()
+                val = coninterrupt.query()
                 if val:
                     if interrupt.settings["Hard interrupt"]:
                         unconnectedhard.append((coninterrupt, val))
                     else:
                         unconnectedsoft.append((coninterrupt, val))
         if len(unconnectedhard) > 0:
+            # print("Return 2")
             return pickfromlist(unconnectedhard)
 
         """Check to see if the current state is still playing an animation"""
+        # print("currentframe", self.currentframe, "length", self.length)
+        # print("Value compared", self.length - 2 - self.settings["Fade out"])
         if self.currentframe < self.length - 2 - self.settings["Fade out"]:
+            # print("Return 3")
             return self
 
         """Check to see if there are interrupts to jump to that are soft"""
         if len(connectedsoft) > 0:
+            # print("Return 4")
             return pickfromlist(unconnectedhard)
 
         if len(unconnectedsoft) > 0:
+            # print("Return 5")
             return pickfromlist(unconnectedsoft)
 
         """If animation finished and no interrupts look at connections"""
         options = []
         for con in self.connected:
-            val = con.poll()
+            val = con.query()
             if val:
                 options.append((con, val))
         if len(options) > 0:
+            # print("Return 6")
+            # print(options)
             return pickfromlist(options)
 
         return self.tree.start
@@ -252,11 +266,13 @@ class StateTree():
                 self.current = cur
                 cur.moveto(userid)
                 # cur.active()
-                tmp.append(cur)
-                print("Moving into new state", cur.__class__.__name__)
-        for active in self.active:
-            if active.active():
-                tmp.append(active)
+                tmp.append((cur, 0))
+                print("Moving into new state", cur.__class__.__name__,
+                      cur.settings["Action"])
+        for active, lastframe in self.active:
+            frame = active.active(lastframe)
+            if frame:
+                tmp.append((active, frame))
         self.active = tmp
 
 
@@ -276,7 +292,8 @@ class Brain():
     def reset(self):
         self.outvars = {"rx": 0, "ry": 0, "rz": 0,
                         "px": 0, "py": 0, "pz": 0}
-        self.tags = self.sim.agents[self.currentuser].access["tags"]
+        # self.tags = self.sim.agents[self.currentuser].access["tags"]
+        self.tags = {}
         self.agvars = self.sim.agents[self.currentuser].agvars
 
     def execute(self, userid, statetree):

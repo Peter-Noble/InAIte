@@ -212,7 +212,7 @@ class LogicSETTAG(Neuron):
                     del self.brain.tags[settings["Tag"]]
         else:
             if settings["Action"][0] == "Add":
-                self.brain.tags[settings["Tag"]] = settings["Value"]
+                self.brain.tags[settings["Tag"]] = total
             else:
                 del self.brain.tags[settings["Tag"]]
         return settings["Threshold"]
@@ -362,7 +362,7 @@ class State{NAME}(State):
     def __ init__(self, tree):
         State.__init__(self, tree)
 
-    def poll(self):
+    def query(self):
         return 1
 """
 
@@ -379,7 +379,7 @@ class StateSTART(State):
         State.__init__(self, tree)
         self.start = True
 
-    def poll(self):
+    def query(self):
         return 0
 
 
@@ -395,14 +395,14 @@ class StateSTD(State):
     def __init__(self, tree):
         State.__init__(self, tree)
 
-    def poll(self):
+    def query(self):
         if self.settings["Trigger"] in self.tree.brain.tags:
             return self.tree.brain.tags[self.settings["Trigger"]]
         return 0
 
 
 class StateTRANSITION(State):
-    """This node polls the node it's connected to and returns those results"""
+    """This node queries the node its connected to and returns those results"""
     settings = OrderedDict([("Action", ""),
                             ("Fade in", 0),
                             ("Fade out", 0)])
@@ -412,8 +412,8 @@ class StateTRANSITION(State):
     def __init__(self, tree):
         State.__init__(self, tree)
 
-    def poll(self):
-        return self.connected[0].poll()
+    def query(self):
+        return self.connected[0].query()
 
 
 class StateINTERRUPT(State):
@@ -431,7 +431,7 @@ class StateINTERRUPT(State):
         State.__init__(self, tree)
         self.interrupt = True
 
-    def poll(self):
+    def query(self):
         if self.settings["Trigger"] in self.tree.brain.tags:
             val = self.tree.brain.tags[self.settings["Trigger"]]
             if val > self.settings["Theshold"]:

@@ -97,24 +97,25 @@ class Window(QtGui.QMainWindow):
             saveto = QtGui.QInputDialog.getText(win, "Save to", "Name")[0]
             if saveto == "":
                 return
-            if saveto in win.saveslots:
+            if saveto.upper() in win.saveslots:
                 """If the name clashes with an exiting one show a warning"""
                 Yes = QtGui.QMessageBox.Yes
                 No = QtGui.QMessageBox.No
                 r = QtGui.QMessageBox.question(self, 'Save over',
-                                               "Save over " + saveto + "?",
+                                               "Save over " + saveto.upper()
+                                               + "?",
                                                Yes | No, No)
                 if r == No:
                     return
             savedata = func()
-            win.saveslots[saveto] = savedata.__str__()
+            win.saveslots[saveto.upper()] = savedata.__str__()
             win.lastsaved = savedata
-            win.current = saveto
+            win.current = saveto.upper()
             # print(savedata.__str__().replace("\n", "{NEWLINE}"))
             """assemble the save data and send it back to blender"""
             saves = []
             for item in self.saveslots:
-                saves.append((item[0], item, self.saveslots[item]))
+                saves.append((item.upper(), item, self.saveslots[item]))
             saves = tuple(saves)
             self.updatesaves(saves)
 

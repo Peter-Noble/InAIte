@@ -48,6 +48,11 @@ class Simulation():
                 ag = Agent(name, self.compbrains[ty])
                 self.agents[name] = ag
 
+    def createAgents(self, agents):
+        # TODO this really needs a better way of searching throught the brains
+        for ag in agents:
+            self.newagent(ag.name)
+
     def step(self, scene):
         print("NEWFRAME", sce.frame_current)
         for agent in self.agents.values():

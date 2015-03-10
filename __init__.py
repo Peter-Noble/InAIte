@@ -54,7 +54,7 @@ class SCENE_OT_group_populate(Operator):
                 groups.append(str(agent.group))
                 item = context.scene.cfx_groups.coll.add()
                 item.name = str(agent.group)
-                item.type = 'N'
+                item.type = 'NONE'
         return {'FINISHED'}
 
 # TODO  needs list clean up adding
@@ -162,7 +162,7 @@ class SCENE_OT_cfx_agents_populate(Operator):
                     else:
                         bpy.context.scene.cfx_agents_default.setno += 1
                         group = bpy.context.scene.cfx_agents_default.setno
-                item.type = 'N'
+                item.type = 'NONE'
         bpy.ops.scene.cfx_groups_populate()
         return {'FINISHED'}
 
@@ -264,14 +264,16 @@ class SCENE_OT_cfx_start(Operator):
     bl_label = "Start simulation"
 
     def execute(self, context):
+        context.scene.frame_current = context.scene.frame_start
         global sim
         if "sim" in globals():
             sim.stopFrameHandler()
             del sim
         sim = Simulation()
         sim.actions()
-        for ag in bpy.context.scene.cfx_agents.coll:
-            sim.newagent(ag.name)
+        """for ag in bpy.context.scene.cfx_agents.coll:
+            sim.newagent(ag.name)"""
+        sim.createAgents(bpy.context.scene.cfx_agents.coll)
         sim.startFrameHandler()
         return {'FINISHED'}
 

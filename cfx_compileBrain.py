@@ -26,7 +26,7 @@ def compilestatetree(toload, brain):
     ref = {}  # Temp storage for adding edges
     for nodeUID in toload["nodes"]:
         lono = toload["nodes"][nodeUID]
-        item = statetypes[lono["category"][0]](tree)
+        item = statetypes[lono["category"][0]](tree)  # create state object
         settings = lono["settings"]
         for s in settings:
             if isinstance(settings[s], str):

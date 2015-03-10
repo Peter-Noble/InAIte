@@ -5,8 +5,8 @@ from bpy.types import PropertyGroup, UIList, Panel, Operator
 
 # =============== DATA START===============#
 
-d = [('N', 'None', """{'edges': [], 'nodes': {}}"""),
-     ('G', 'Ground', """{'edges': [{'source': 0, 'dest': 1}], 'nodes': {0:
+d = [('NONE', 'None', """{'edges': [], 'nodes': {}}"""),
+     ('GROUND', 'Ground', """{'edges': [{'source': 0, 'dest': 1}], 'nodes': {0:
       {'frameparent': (None,), 'posx': 0.0, 'category': ('SETTAG', ['INPUT',
       'GRAPH', 'AND', 'OR', 'QUERYTAG', 'SETTAG', 'VARIABLE', 'MAP', 'OUTPUT',
       'EVENT', 'PYTHON', 'PRINT']), 'posy': 0.0, 'settings':
@@ -127,23 +127,24 @@ def update_cfx_brains(brains):
     cfx_brains = bpy.context.scene.cfx_brains
     idents = {}
     for x in cfx_brains:
-        idents[x.dispname] = x
+        idents[x.identify] = x
     # print("brains", brains)
     for bb in brains:
-        if bb[1] in idents:
+        if bb[0] in idents:
             # print("Brain", bb[0], "modified")
-            idents[bb[1]].identify = bb[0]
-            idents[bb[1]].brain = bb[2]
+            idents[bb[1].upper()].identify = bb[1].upper()
+            idents[bb[1].upper()].dispname = bb[1]
+            idents[bb[1].upper()].brain = bb[2]
         else:
             # print("New brain", bb[0], "added")
             item = cfx_brains.add()
-            item.identify = bb[0]
+            item.identify = bb[1].upper()
             item.dispname = bb[1]
             item.brain = bb[2]
     setCfxBrains()
     for g in bpy.context.scene.cfx_groups.coll:
         if g.type not in [x.identify for x in cfx_brains]:
-            g.type = cfx_brains[0][1]
+            g.type = cfx_brains[0][1].upper()
             # print(g, g.type)
 
 registered = False
