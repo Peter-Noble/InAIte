@@ -119,21 +119,13 @@ class State():
             action = actionobj.action  # bpy action
             if action:
                 strip = tr.strips.new("", sce.frame_current, action)
-                strip.extrapolation = 'HOLD_FORWARD'
+                strip.extrapolation = 'NOTHING'
                 strip.use_auto_blend = True
             self.length = actionobj.length
-            """tr = obj.animation_data.nla_tracks.new()  # NLA track
-            action = actionobj.motion
-            if action:
-                strip = tr.strips.new("", sce.frame_current, action)
-                strip.extrapolation = 'HOLD_FORWARD'
-                strip.use_auto_blend = False
-                strip.blend_type = 'ADD'"""
 
     def active(self, currentframe):
         """Used for states that are still having an effect on the position
         and animation but aren't the current state"""
-        # print("active called", self)
         fr = currentframe + 1
         if fr <= self.length:
             action = self.tree.brain.sim.actions[self.settings["Action"]]
@@ -153,12 +145,7 @@ class State():
         else:
             return False
 
-    # def evaluateparent(self):
-    #     """return the active state of the parent neuron"""
-    #     return self.currentframe != 0
-
     def evaluate(self):
-        # print("Evaluating state", self)
         """Return the state to move to (allowed to return itself)"""
         def pickfromlist(options):
             """options in form [(state, value)]"""
@@ -188,7 +175,7 @@ class State():
 
         self.currentframe += 1
 
-        """Check if there are any connected interrupts to jump to"""
+        # Check if there are any connected interrupts to jump to
         connectedhard = []
         connectedsoft = []
         for coninterrupt in self.interrupts:
@@ -199,9 +186,8 @@ class State():
                 else:
                     connectedsoft.append((coninterrupt, val))
         if len(connectedhard) > 0:
-            # print("Return 1")
             return pickfromlist(connectedhard)
-        """Check if there are any unconnected interrupts to jump to"""
+        # Check if there are any unconnected interrupts to jump to
         unconnectedhard = []
         unconnectedsoft = []
         for interrupt in self.tree.interrupts:
@@ -213,34 +199,26 @@ class State():
                     else:
                         unconnectedsoft.append((coninterrupt, val))
         if len(unconnectedhard) > 0:
-            # print("Return 2")
             return pickfromlist(unconnectedhard)
 
-        """Check to see if the current state is still playing an animation"""
-        # print("currentframe", self.currentframe, "length", self.length)
-        # print("Value compared", self.length - 2 - self.settings["Fade out"])
+        # Check to see if the current state is still playing an animation
         if self.currentframe < self.length - 2 - self.settings["Fade out"]:
-            # print("Return 3")
             return self
 
-        """Check to see if there are interrupts to jump to that are soft"""
+        # Check to see if there are interrupts to jump to that are soft
         if len(connectedsoft) > 0:
-            # print("Return 4")
             return pickfromlist(unconnectedhard)
 
         if len(unconnectedsoft) > 0:
-            # print("Return 5")
             return pickfromlist(unconnectedsoft)
 
-        """If animation finished and no interrupts look at connections"""
+        # If animation finished and no interrupts look at connections
         options = []
         for con in self.connected:
             val = con.query()
             if val:
                 options.append((con, val))
         if len(options) > 0:
-            # print("Return 6")
-            # print(options)
             return pickfromlist(options)
 
         return self.tree.start
@@ -256,7 +234,7 @@ class StateTree():
         self.active = []
         self.current = None
         self.start = None
-        """current and start will begin the same but current will change"""
+        # current and start will begin the same but current will change
 
     def execute(self, userid):
         tmp = []
@@ -297,8 +275,8 @@ class Brain():
         self.agvars = self.sim.agents[self.currentuser].agvars
 
     def execute(self, userid, statetree):
-        # TODO could userid be replaced with self.currentuser?
         """Called for each time the agents needs to evaluate"""
+        # TODO could userid be replaced with self.currentuser?
         self.currentuser = userid
         self.reset()
         for name, var in self.lvars.items():

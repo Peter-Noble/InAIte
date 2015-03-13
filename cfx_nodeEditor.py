@@ -78,8 +78,6 @@ class Edge(QtGui.QGraphicsItem):
             sourceOffsety = -self.source.height
 
         sourceEdgeOffset = QtCore.QPointF(sourceOffsetx, sourceOffsety)
-        # edgeOffset = QtCore.QPointF((line.dx() * 10) / length, (line.dy() *
-        # 10) / length)
 
         destOffsetx = (line.dx() * math.sqrt(self.dest.width**2 +
                                              self.dest.height**2)) / length
@@ -99,10 +97,9 @@ class Edge(QtGui.QGraphicsItem):
         self.prepareGeometryChange()
         self.sourcePoint = line.p1() + sourceEdgeOffset
         self.destPoint = line.p2() - destEdgeOffset
-        # self.sourcePoint = line.p1()
-        # self.destPoint = line.p2()
 
     def boundingRect(self):
+        """Rectangle that contains the whole arrow"""
         if not self.source or not self.dest:
             return QtCore.QRectF()
 
@@ -118,6 +115,7 @@ class Edge(QtGui.QGraphicsItem):
         return retqrectf
 
     def paint(self, painter, option, widget):
+        """Draw the arrow in the scene"""
         if not self.source or not self.dest:
             return
 
@@ -201,6 +199,7 @@ class Node(QtGui.QGraphicsItem):
             self.displayname = "Motion"
 
     def addEdge(self, edge):
+        """New edge connecting this node"""
         self.edgeList.append(edge)
         edge.adjust()
 
@@ -208,6 +207,7 @@ class Node(QtGui.QGraphicsItem):
         return self.edgeList
 
     def advance(self):
+        """Change made to the node"""
         if self.newPos == self.pos():
             return False
 
@@ -230,6 +230,7 @@ class Node(QtGui.QGraphicsItem):
         return path
 
     def paint(self, painter, option, widget):
+        """Draw the node"""
         painter.setPen(QtCore.Qt.NoPen)
         if option.state & QtGui.QStyle.State_Sunken:
             painter.setPen(QtGui.QPen(HIGHLIGHTCOLOUR, 4))
@@ -313,12 +314,14 @@ class Node(QtGui.QGraphicsItem):
                         self.frameparent.addChild(self)
 
     def mousePressEvent(self, event):
+        """When clicked on"""
         self.graph.backgroundClick = False
         self.dragStart = False
         self.update()
         QtGui.QGraphicsItem.mousePressEvent(self, event)
 
     def mouseReleaseEvent(self, event):
+        """Node dropped or selected"""
         self.update()
         QtGui.QGraphicsItem.mouseReleaseEvent(self, event)
         sel = True
@@ -342,6 +345,7 @@ class Node(QtGui.QGraphicsItem):
             self.graph.scene.setSceneRect(Rect)
 
     def mouseMoveEvent(self, event):
+        """For dragging nodes around"""
         self.dragStart = False
         if not self.dragStart:
             self.dragStart = True
@@ -385,6 +389,8 @@ class MotionFrame(MotionNode):
         self.setZValue(-2)
 
     def paint(self, painter, option, widget):
+        """Overwrite paint of MotionNode because this type has an area for
+        other nodes to be in""""
         painter.setPen(QtCore.Qt.NoPen)
         if option.state & QtGui.QStyle.State_Sunken:
             painter.setPen(QtGui.QPen(HIGHLIGHTCOLOUR, 4))
@@ -411,6 +417,7 @@ class MotionFrame(MotionNode):
                          QtCore.Qt.AlignCenter, self.displayname)
 
     def addChild(self, child):
+        """Node added to this frame"""
         self.children.append([child, child.pos() - self.pos()])
 
     def itemChange(self, change, value):
@@ -470,6 +477,7 @@ class CfxEditor(QtGui.QGraphicsView):
         self.rubMoved = False
 
     def getUID(self):
+        """Get the next free unique identity"""
         UID = 0
         current = []
         for node in self.nodes:
@@ -481,6 +489,7 @@ class CfxEditor(QtGui.QGraphicsView):
                 return UID
 
     def addNode(self, nodeType):
+        """New node added to graph"""
         item = nodeType(self)
         cat = item.category[0]
         if cat in logictypes:
@@ -532,6 +541,7 @@ class CfxEditor(QtGui.QGraphicsView):
             QtGui.QGraphicsView.keyPressEvent(self, event)
 
     def keyReleaseEvent(self, event):
+        """Keyboard shortcuts"""
         self.modifiers = QtGui.QApplication.keyboardModifiers()
         QtGui.QGraphicsView.keyReleaseEvent(self, event)
 
@@ -602,12 +612,14 @@ class CfxEditor(QtGui.QGraphicsView):
         self.scene.addItem(ed)
 
     def resetGraph(self):
+        """Clear everything ready to start again"""
         for item in self.nodes+self.edges:
             self.scene.removeItem(item)
         self.nodes = []
         self.edges = []
 
     def mousePressEvent(self, event):
+        """Clicks in window. Can cause rubber band selecting"""
         self.backgroundClick = True
         QtGui.QGraphicsView.mousePressEvent(self, event)
         if self.backgroundClick and event.button() == QtCore.Qt.LeftButton:
@@ -619,6 +631,7 @@ class CfxEditor(QtGui.QGraphicsView):
             self.rubberBand.show()
 
     def mouseMoveEvent(self, event):
+        """Dragging nodes or stretching rubber bands"""
         QtGui.QGraphicsView.mouseMoveEvent(self, event)
         if self.pressedDown:
             self.rubMoved = True
@@ -626,6 +639,7 @@ class CfxEditor(QtGui.QGraphicsView):
             self.rubberBand.setGeometry(self.rubrect)
 
     def mouseReleaseEvent(self, event):
+        """Rubber band dropped or node selected"""
         QtGui.QGraphicsView.mouseReleaseEvent(self, event)
         if self.pressedDown and self.rubMoved:
             self.rubberBand.hide()

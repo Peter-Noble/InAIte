@@ -15,6 +15,8 @@ GraphEditor = cfx_graphWidget.GraphEditor
 
 
 class Properties(QtGui.QWidget):
+    """Widget that displays in the lower half of the pop up GUI and dynamically
+    generates the widgets to edit the properties of the selected node"""
     def __init__(self):
         QtGui.QWidget.__init__(self)
         self.propbox = QtGui.QVBoxLayout()
@@ -23,28 +25,35 @@ class Properties(QtGui.QWidget):
         self.setMinimumSize(800, 200)
 
     def updateProp(self, selected, key, val):
+        """Change made to a generic property"""
         selected.settings[key] = val
         selected.update()
 
     def updateBoolProp(self, selected, key, val):
+        """Change made to boolean property"""
         selected.settings[key] = True if val == 2 else False
+        # The tick box has a half selected/ticked state which is ignored
         selected.update()
 
     def updateGraphProp(self, selected, key, val):
+        """Change made to graph property"""
         store = [(node.pos().x(), node.pos().y()) for node in val.gw.nodes]
         results = (selected.settings[key]["value"][0], store)
         selected.settings[key]["value"] = results
         selected.update()
 
     def updatetextedit(self, selected, key, textedit):
+        """Change made to multiline string"""
         selected.settings[key]["value"] = textedit.toPlainText()
         selected.update()
 
     def updateDisplayName(self, selected, name):
+        """Change made to the name of the node"""
         selected.displayname = name
         selected.update()
 
     def updateType(self, selected, item, totype):
+        """Change made to the type/category of the node"""
         nametotype = item.itemText(totype)
         if nametotype in logictypes:
             selected.colour = logictypes[nametotype].colour
@@ -57,11 +66,14 @@ class Properties(QtGui.QWidget):
         selected.update()
 
     def updateTuple(self, selected, key, totype):
+        """Change made to tuple (drop down) property"""
         selected.settings[key] = (selected.settings[key][1][totype],
                                   selected.settings[key][1])
         selected.update()
 
     def newSelected(self, selected):
+        """Generate a new set of property editors when different node selected
+        or when a change is made to the currently selected"""
         self.clearLayout(self.propbox)
         if selected:
             height = 0
@@ -159,6 +171,7 @@ class Properties(QtGui.QWidget):
             self.setMinimumSize(width, height)
 
     def clearLayout(self, layout):
+        """Recursively destroy the property editors and all their children"""
         while layout.count():
             child = layout.takeAt(0)
             if child.widget() is not None:

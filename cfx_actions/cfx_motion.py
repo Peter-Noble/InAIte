@@ -22,6 +22,7 @@ class action:
 
         self.motionname = motionname
         if motionname in A:
+            # Extract the location and rotation data from the animation
             self.motion = A[self.motionname]
             mrange = self.motion.frame_range
             mlen = mrange[1] - mrange[0] + 1
@@ -41,11 +42,9 @@ class action:
 
 
 def getmotions():
+    """Turn all the entries for actions into action objects"""
     sce = bpy.context.scene
     result = {}
     for m in sce.cfx_actions.coll:
         result[m.name] = action(m.name, m.action, m.motion)
     return result
-
-
-# D.actions['Cube.007Action'].fcurves[4].evaluate(10)

@@ -11,10 +11,11 @@ class Sound(Mc):
     """The object containing all of the sound channels"""
     def __init__(self, sim):
         Mc.__init__(self, sim)
-        """All the different sound frequencies that were emitted last frame"""
+        # All the different sound frequencies that were emitted last frame
         self.channels = {}
 
     def register(self, agent, frequency, val):
+        """Adds an object that is emitting a sound"""
         if frequency in dir(self):
             print("""frequency must not be an attribute of this
                   python object""")
@@ -55,7 +56,7 @@ class Channel:
         :type frequency: String"""
         self.emitters = {}
         self.frequency = frequency
-        """Temporary storage which is reset after each agents has used it"""
+        # Temporary storage which is reset after each agents has used it
         self.store = {}
 
     def register(self, objectid, val):
@@ -67,6 +68,7 @@ class Channel:
         self.store = {}
 
     def calculate(self):
+        """Called the first time an agent uses this frequency"""
         ag = O[self.userid]
         for emitterid, val in self.emitters.items():
             if emitterid != self.userid:

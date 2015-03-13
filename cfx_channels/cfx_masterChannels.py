@@ -33,6 +33,8 @@ class Wrapper:
         self.channel = channel
 
     def __getattr__(self, attr):
+        """When attribute retrieved for object wrapped by this pass it on to
+        the contained channel in the correct form"""
         if attr in self.channel.__dir__():
             return getattr(self.channel, attr)
         else:

@@ -22,6 +22,7 @@ def processstring(toloadtext):
 
 
 def compilestatetree(toload, brain):
+    """Compile the state machine that is used for the animation of an agent"""
     tree = StateTree(brain)
     ref = {}  # Temp storage for adding edges
     for nodeUID in toload["nodes"]:
@@ -52,6 +53,7 @@ def compilestatetree(toload, brain):
 
 
 def compilebrain(toload, category, sim, newtree):
+    """Compile the brain that defines how and agent moves and is animated"""
     result = Brain(category, sim, newtree)
     """create the connections from the node"""
     for nodeUID in toload["nodes"]:
@@ -77,6 +79,7 @@ def compilebrain(toload, category, sim, newtree):
 
 
 def compileagent(toloadtext, category, sim):
+    """Assemble and agent object from all the parts it needs"""
     toload = processstring(toloadtext)
     newtree = functools.partial(compilestatetree, toload["MotionNode"])
     brain = compilebrain(toload["LogicNode"], category, sim, newtree)

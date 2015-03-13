@@ -55,6 +55,7 @@ class Node(QtGui.QGraphicsItem):
         self.goingto = self.pos()
 
     def showToolTip(self):
+        """Display coordinates (as the simulation will us them) in tooltip"""
         x = (self.scenePos().x() - 200) / 200
         y = (self.scenePos().y() - 100) / 100
         if self.toolTip() != "{0}, {1}".format(x, y):
@@ -68,6 +69,7 @@ class Node(QtGui.QGraphicsItem):
         self.newPos = self.pos()
 
     def advance(self):
+        """Node changed"""
         if self.newPos == self.pos():
             return False
 
@@ -85,14 +87,17 @@ class Node(QtGui.QGraphicsItem):
         painter.drawEllipse(-3, -3, 6, 6)
 
     def itemChange(self, change, value):
+        """Position of the node changed"""
         self.graph.itemMoved()
         return QtGui.QGraphicsItem.itemChange(self, change, value)
 
     def mouseMoveEvent(self, event):
+        """When the position of the node changed"""
         self.showToolTip()
         QtGui.QGraphicsItem.mouseMoveEvent(self, event)
 
     def mouseReleaseEvent(self, event):
+        """Node dropped"""
         sceneRect = self.scene().sceneRect()
         tmp = self.pos()
         if self.pos().x() < sceneRect.left():
@@ -115,7 +120,7 @@ class GraphWidget(QtGui.QGraphicsView):
     def __init__(self):
         QtGui.QGraphicsView.__init__(self)
 
-        # TODO  add x=0 line
+        # TODO  add x=0 line and/or background grid
 
         self.timerId = 0
         self.scene = QtGui.QGraphicsScene()
@@ -137,6 +142,7 @@ class GraphWidget(QtGui.QGraphicsView):
         self.setVerticalScrollBarPolicy(noscroll)
 
     def itemMoved(self):
+        "Node has been dragged"
         if not self.timerId:
             self.timerId = self.startTimer(1000 / 25)
 
@@ -154,6 +160,7 @@ class GraphWidget(QtGui.QGraphicsView):
             self.timerId = 0
 
     def addCurves(self):
+        """Connect nodes"""
         for curve in self.curves:
             self.scene.removeItem(curve)
 
@@ -173,6 +180,7 @@ class GraphWidget(QtGui.QGraphicsView):
             self.curves.append(c)
 
     def checkcorners(self):
+        """If the nodes in the corner have been moved then create new ones"""
         putleft = True
         foundleft = False
         putright = True
@@ -210,6 +218,7 @@ class GraphWidget(QtGui.QGraphicsView):
         self.graphChanged.emit()
 
     def setGraph(self, data):
+        """Load the graph from the data in a node"""
         for node in data[1]:
             item = Node(self)
             item.setPos(node[0], node[1])

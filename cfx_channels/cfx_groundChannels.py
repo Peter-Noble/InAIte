@@ -18,6 +18,11 @@ class Ground(Mc):
         self.store = {}
         self.calced = False
 
+    def setuser(self, userid):
+        self.store = {}
+        self.calced = False
+        Mc.setuser(self, userid)
+
     def calcindividualground(self, from_obj, to_obj):
         """Returns the location and average normal of faces from to_obj that
         are directly above or below from_obj
@@ -32,28 +37,44 @@ class Ground(Mc):
                 # world_point = to_obj.matrix_world * local_point
                 tVerts.append(to_obj.matrix_world * local_point)
                 # print("vert", vert, " vert co", world_point)
-            intersect = geometry.intersect_ray_tri(tVerts[0], tVerts[1],
-                                                   tVerts[2],
-                                                   Vector((0.0, 0.0, 1.0)),
-                                                   from_obj.location)
-            if intersect:
-                location = intersect
-                intersect_faces.append(face.normal)
-            intersect = geometry.intersect_ray_tri(tVerts[0], tVerts[1],
-                                                   tVerts[2],
-                                                   Vector((0.0, 0.0, -1.0)),
-                                                   from_obj.location)
-            if intersect:
-                location = intersect
-                intersect_faces.append(face.normal)
+            location = geometry.intersect_ray_tri(tVerts[0], tVerts[1],
+                                                  tVerts[2],
+                                                  Vector((0.0, 0.0, 1.0)),
+                                                  from_obj.location)
+            if location:
+                intersect_faces.append((location, face.normal))
+
+            location = geometry.intersect_ray_tri(tVerts[0], tVerts[1],
+                                                  tVerts[2],
+                                                  Vector((0.0, 0.0, -1.0)),
+                                                  from_obj.location)
+            if location:
+                intersect_faces.append((location, face.normal))
+
+        # Find all the intersections that are closest to the agent
         if len(intersect_faces) > 0:
+            minheight = intersect_faces[0][0][2] - from_obj.location[2]
+            mindist = abs(minheight)
+            closest = []
+            for inter in intersect_faces:
+                thisheight = inter[0][2] - from_obj.location[2]
+                thisdist = abs(thisheight)
+                if thisdist < mindist:
+                    minheight = thisheight
+                    mindist = thisdist
+                    closest = [inter[1]]
+                elif thisheight == minheight:
+                    closest.append(inter[1])
+
+            # Find average direction of normal
             normal = Vector()
-            for f in intersect_faces:
+            for f in closest:
                 normal += f
-            normal /= len(intersect_faces)
-            return location, normal
+            normal /= len(closest)
+            return minheight, normal
 
     def calcground(self):
+        """Called the first time each agent uses the Ground channel"""
         grounds = []
         for ag in self.sim.agents.values():
             if "Ground" in ag.access["tags"]:
@@ -65,13 +86,12 @@ class Ground(Mc):
             if calcd:
                 results.append(calcd)
         if len(results) > 0:
-            """Get the result with the shortest distance to the ground"""
+            # Get the result with the shortest distance to the ground
             output = results[0]
             for r in results[1:]:
-                # TODO doesn't output[0] need to be output[0][2]???
-                if output[0]-s.location[2] < r[0][2]-s.location[2]:
+                if output[0] < r[0]:
                     output = r
-            self.store["location"] = output[0]
+            self.store["height"] = output[0]
             self.store["normal"] = output[1]
 
             self.calced = True
@@ -82,11 +102,9 @@ class Ground(Mc):
         if not self.calced:
             self.calcground()
         if self.store:
-            zloc = sce.objects[self.userid].location[2]
-            return self.store["location"][2] - zloc
+            return self.store["height"]
         else:
             return 0
-        # TODO  put something sensible in here for when there in no ground
 
     @property
     def dx(self):

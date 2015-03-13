@@ -57,6 +57,7 @@ class Agent:
         D[blenderid].animation_data_clear()
 
     def step(self):
+        """The method that is called for this agent each frame"""
         self.brain.execute(self.id, self.statetree)
         if D[self.id].select:
             print(self.id, self.brain.tags)
