@@ -75,8 +75,8 @@ class Simulation():
     def frameChangeHandler(self, scene):
         """Given to Blender to call whenever the scene moves to a new frame"""
         if self.framelast+1 == sce.frame_current:
-            self.step(scene)
             self.framelast = sce.frame_current
+            self.step(scene)
 
     def startFrameHandler(self):
         """Add self.frameChangeHandler to the Blender event handlers"""

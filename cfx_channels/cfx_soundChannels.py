@@ -1,10 +1,74 @@
 from .cfx_masterChannels import MasterChannel as Mc
 import math
 import mathutils
-import bpy
 
-sce = bpy.context.scene
-O = sce.objects
+if __name__ != "__main__":
+    import bpy
+
+    O = bpy.context.scene.objects
+else:
+    import unittest
+
+    from .cfx_masterChannels import Wrapper as wr
+
+    class FakeObject():
+        """Impersonate bpy.context.scene.objects[n]"""
+        def __init__(self, location, rotation):
+            self.location = mathutils.Vector(location)
+            self.rotation_euler = mathutils.Euler(rotation)
+
+    class FakeAgent():
+        """Impersonate Simulation.agents[n]"""
+        def __init__(self, bid):
+            self.id = bid
+
+    class FakeSimulation():
+        """Impersonate the Simulation object"""
+        def __init__(self):
+            self.framelast = 1
+
+    class Test(unittest.TestCase):
+        def setUp(self):
+            global O
+            # Impersonate bpy.context.scene.objects
+            # These are the objects that can be used to emit and hear sounds
+            O = {"OB1": FakeObject([0, 0, 0], [0, 0, 0]),
+                 "OB2": FakeObject([1, 0, 0], [0, 0, 0]),
+                 "OB3": FakeObject([0, 1, 0], [0, 0, 0]),
+                 "OB4": FakeObject([0, -1, 0], [0, 0, 0]),
+                 "OB5": FakeObject([-0.1, -1, 0], [0, 0, 0])}
+
+            self.FSim = FakeSimulation()
+
+            self.sound = wr(Sound(self.FSim))
+
+        def testOne(self):
+            """Some simple test cases"""
+            self.sound.register(FakeAgent("OB1", "A", 1))
+            self.sound.register(FakeAgent("OB2", "A", 1))
+            self.sound.register(FakeAgent("OB3", "A", 1))
+
+            self.sound.setuser("OB1")
+            self.assertEqual(self.sound.A.rz, {"OB2": 0.5,
+                                               "OB3": 0})
+            self.assertEqual(self.sound.A.db, {"OB2": 0,
+                                               "OB3": 0})
+
+        def testBoundryRotations(self):
+            """Testing the extremes of the rotation"""
+            self.sound.register(FakeAgent("OB1", "A", 1))
+            self.sound.register(FakeAgent("OB4", "A", 1))
+            self.sound.register(FakeAgent("OB5", "A", 1))
+
+            self.sound.setuser("OB1")
+            self.assertEqual(self.sound.A.rz["OB4"], 1)
+            self.assertTrue(-1 < self.sound.A.rz["OB5"] < -0.75)
+
+        def tearDown(self):
+            self.sound.newFrame()
+
+    # Run unit test
+    unittest.main()
 
 
 class Sound(Mc):
