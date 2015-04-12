@@ -108,16 +108,17 @@ class LogicGRAPH(Neuron):
             res = comp1 + comp2
             return res / 100
 
-        output = {}
-        for into in inps:
-            for i in into:
-                if i.key in output:
-                    print("""LogicGRAPH data lost due to multiple inputs
-                             with the same key""")
-                else:
-                    if settings["Interpolation type"][0] == "linear":
-                        output[i.key] = linear(i.val)
-                    # cubic bezier could also be an option here
+        if settings["Interpolation type"][0] == "linear":
+            output = {}
+            for into in inps:
+                for i in into:
+                    if i.key in output:
+                        print("""LogicGRAPH data lost due to multiple inputs
+                                 with the same key""")
+                    else:
+                        if settings["Interpolation type"][0] == "linear":
+                            output[i.key] = linear(i.val)
+                        # cubic bezier could also be an option here
         return output
 
 
