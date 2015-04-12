@@ -5,8 +5,8 @@ from bpy.types import PropertyGroup, UIList, Panel, Operator
 
 # =============== DATA START===============#
 
-d = [('NONE', 'None', """{'edges': [], 'nodes': {}}"""),
-     ('GROUND', 'Ground', """{'edges': [{'source': 0, 'dest': 1}], 'nodes': {0:
+d = [('NONE', """{'edges': [], 'nodes': {}}"""),
+     ('GROUND', """{'edges': [{'source': 0, 'dest': 1}], 'nodes': {0:
       {'frameparent': (None,), 'posx': 0.0, 'category': ('SETTAG', ['INPUT',
       'GRAPH', 'AND', 'OR', 'QUERYTAG', 'SETTAG', 'VARIABLE', 'MAP', 'OUTPUT',
       'EVENT', 'PYTHON', 'PRINT']), 'posy': 0.0, 'settings':
@@ -33,13 +33,13 @@ def setCfxBrains():
     """loads the brains from the .blend or creates them if they don't already
     exist"""
     for b in default_slots:
-        if b[1] not in [b.dispname for b in bpy.context.scene.cfx_brains]:
+        if b[0] not in [br.dispname for br in bpy.context.scene.cfx_brains]:
             item = bpy.context.scene.cfx_brains.add()
             item.identify = b[0]
-            item.dispname = b[1]
-            item.brain = b[2]
+            item.dispname = b[0]
+            item.brain = b[1]
     cfx_brains = bpy.context.scene.cfx_brains
-    # print("Loaded brains", cfx_brains)
+    print("Loaded brains", cfx_brains)
 
 
 def cfx_brains_callback(scene, context):

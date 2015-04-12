@@ -5,16 +5,17 @@ import copy
 import math
 
 sce = bpy.context.scene
-O = sce.objects
 D = bpy.data.objects
 
 
 class Agent:
     """Represents each of the agents in the scene"""
     def __init__(self, blenderid, brain):
+        print("Blender id", blenderid)
         self.sim = brain.sim
         self.id = blenderid
         self.brain = brain
+        # print(self, self.brain.type)
         self.statetree = self.brain.newtree()
         self.external = {"id": self.id, "type": self.brain.type, "tags": {}}
         """self.external modified by the agent and then coppied to self.access
@@ -55,7 +56,6 @@ class Agent:
         D[blenderid].animation_data_clear()
 
     def step(self):
-        """The method that is called for this agent each frame"""
         self.brain.execute(self.id, self.statetree)
         if D[self.id].select:
             print(self.id, self.brain.tags)

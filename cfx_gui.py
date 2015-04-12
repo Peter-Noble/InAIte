@@ -89,6 +89,8 @@ class Window(QtGui.QMainWindow):
         for b in loadbrains:
             self.saveslots[b.dispname] = b.brain
 
+        print("Saves", self.saveslots.keys())
+
         self.current = None  # index of the currently open tree
 
         self.setGeometry(1000, 100, 300, 200)

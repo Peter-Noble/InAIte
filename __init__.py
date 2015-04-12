@@ -141,7 +141,6 @@ class SCENE_OT_cfx_agents_populate(Operator):
                 i += 1
 
     def execute(self, context):
-        from .cfx_blenderData import setCfxBrains
         setCfxBrains()
 
         ag = [x.name for x in bpy.context.scene.cfx_agents.coll]
@@ -255,6 +254,7 @@ class SCENE_OT_cfx_startui(Operator):
     bl_label = "start UI"
 
     def execute(self, context):
+        setCfxBrains()
         runui(update_cfx_brains, cfx_brains)
         return {'FINISHED'}
 
@@ -393,6 +393,9 @@ def register():
 
     from .cfx_blenderData import registerTypes
 
+    global setCfxBrains
+    from .cfx_blenderData import setCfxBrains
+
     registerTypes()
     action_register()
     event_register()
@@ -408,8 +411,6 @@ def initialise():
     global runui
     from .cfx_gui import runui
 
-    global unregisterAllTypes
-    from .cfx_blenderData import unregisterAllTypes
     global update_cfx_brains
     from .cfx_blenderData import update_cfx_brains
 
@@ -424,6 +425,7 @@ def unregister():
     # ...and this one unregisters the SCENE_PT_crowdfx
     action_unregister()
     event_unregister()
+    from .cfx_blenderData import unregisterAllTypes
     unregisterAllTypes()
 
 if __name__ == "__main__":
