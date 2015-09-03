@@ -1,4 +1,4 @@
-CrowdFX
+InAIte
 =======
 
-Computing coursework. Blender addon for crowd simulation
+Blender addon for crowd simulation.
