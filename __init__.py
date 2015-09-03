@@ -1,11 +1,12 @@
 bl_info = {
-    "name": "CrowdFX",
+    "name": "InAIte",
     "description": "Simulate crowds of agents in Blender!",
     "author": "Peter Noble",
     "version": (1, 0),
-    "blender": (2, 73, 0),
-    "location": "Properties > Scene",
-    "category": "Development"
+    "blender": (2, 75, 0),
+    "location": "Properties > Scene and Node Editor",
+    "category": "Animation",
+    "warning": "Extremely experimental! Press save regularly"
 }
 
 import bpy
@@ -24,7 +25,9 @@ class SCENE_UL_group(UIList):
                   active_propname):
         if self.layout_type in {'DEFAULT', 'COMPACT'}:
             layout.label(text=str(item.name))
+            layout.prop(item, "momentum")
             layout.prop(item, "type", text="")
+            # layout.prop_search(item, "type", bpy.data, "actions", text="")
             # this draws each row in the list. Each line is a widget
         elif self.layout_type in {'GRID'}:
             layout.alignment = 'CENTER'
@@ -33,26 +36,26 @@ class SCENE_UL_group(UIList):
 
 
 class SCENE_OT_group_populate(Operator):
-    bl_idname = "scene.cfx_groups_populate"
+    bl_idname = "scene.iai_groups_populate"
     bl_label = "Populate group list"
 
     def execute(self, context):
         groups = []
         toRemove = []
         sce = context.scene
-        for f in range(len(sce.cfx_groups.coll)):
-            name = context.scene.cfx_groups.coll[f].name
+        for f in range(len(sce.iai_groups.coll)):
+            name = context.scene.iai_groups.coll[f].name
             if name not in groups:
-                if name in [str(x.group) for x in sce.cfx_agents.coll]:
-                    groups.append(context.scene.cfx_groups.coll[f].name)
+                if name in [str(x.group) for x in sce.iai_agents.coll]:
+                    groups.append(context.scene.iai_groups.coll[f].name)
             else:
                 toRemove.append(f)
         for f in reversed(toRemove):
-            context.scene.cfx_groups.coll.remove(f)
-        for agent in context.scene.cfx_agents.coll:
+            context.scene.iai_groups.coll.remove(f)
+        for agent in context.scene.iai_agents.coll:
             if str(agent.group) not in groups:
                 groups.append(str(agent.group))
-                item = context.scene.cfx_groups.coll.add()
+                item = context.scene.iai_groups.coll.add()
                 item.name = str(agent.group)
                 item.type = 'NONE'
         return {'FINISHED'}
@@ -62,25 +65,25 @@ class SCENE_OT_group_populate(Operator):
 
 class SCENE_OT_group_remove(Operator):
     """NOT USED NEEDS REMOVING ONCE THE POPULATE KEEPS THE LIST CLEAR"""
-    bl_idname = "scene.cfx_groups_remove"
+    bl_idname = "scene.iai_groups_remove"
     bl_label = "Remove"
 
     @classmethod
     def poll(cls, context):
         s = context.scene
-        return len(s.cfx_groups.coll) > s.cfx_groups.index >= 0
+        return len(s.iai_groups.coll) > s.iai_groups.index >= 0
 
     def execute(self, context):
         s = context.scene
-        s.cfx_groups.coll.remove(s.cfx_groups.index)
-        if s.cfx_groups.index > 0:
-            s.cfx_groups.index -= 1
+        s.iai_groups.coll.remove(s.iai_groups.index)
+        if s.iai_groups.index > 0:
+            s.iai_groups.index -= 1
         return {'FINISHED'}
 
 
 class SCENE_OT_group_move(Operator):
     """NEEDS TO BE REMOVED ONCE POPULATE IS WORKING"""
-    bl_idname = "scene.cfx_groups_move"
+    bl_idname = "scene.iai_groups_move"
     bl_label = "Move"
 
     direction = EnumProperty(items=(
@@ -91,14 +94,14 @@ class SCENE_OT_group_move(Operator):
     @classmethod
     def poll(cls, context):
         s = context.scene
-        return len(s.cfx_groups.coll) > s.cfx_groups.index >= 0
+        return len(s.iai_groups.coll) > s.iai_groups.index >= 0
 
     def execute(self, context):
         s = context.scene
         d = -1 if self.direction == 'UP' else 1
-        new_index = (s.cfx_groups.index + d) % len(s.cfx_groups.coll)
-        s.cfx_groups.coll.move(s.cfx_groups.index, new_index)
-        s.cfx_groups.index = new_index
+        new_index = (s.iai_groups.index + d) % len(s.iai_groups.coll)
+        s.iai_groups.coll.move(s.iai_groups.index, new_index)
+        s.iai_groups.index = new_index
         return {'FINISHED'}
 
 # =============== GROUPS LIST END ===============#
@@ -117,7 +120,7 @@ class SCENE_UL_agents(UIList):
                 ic = 'ERROR'
             layout.prop_search(item, "name", bpy.data, "objects")
             layout.prop(item, "group", text="")
-            typ = [g.type for g in bpy.context.scene.cfx_groups.coll
+            typ = [g.type for g in bpy.context.scene.iai_groups.coll
                    if int(g.name) == item.group][0]
             layout.label(text=typ)
             # this draws each row in the list. Each line is a widget
@@ -127,12 +130,12 @@ class SCENE_UL_agents(UIList):
             # no idea when this is actually used
 
 
-class SCENE_OT_cfx_agents_populate(Operator):
-    bl_idname = "scene.cfx_agents_populate"
-    bl_label = "Populate cfx agents list"
+class SCENE_OT_iai_agents_populate(Operator):
+    bl_idname = "scene.iai_agents_populate"
+    bl_label = "Populate iai agents list"
 
     def findNext(self):
-        g = [x.group for x in bpy.context.scene.cfx_agents.coll]
+        g = [x.group for x in bpy.context.scene.iai_agents.coll]
         i = 1
         while True:
             if i not in g:
@@ -141,50 +144,50 @@ class SCENE_OT_cfx_agents_populate(Operator):
                 i += 1
 
     def execute(self, context):
-        setCfxBrains()
+        setiaiBrains()
 
-        ag = [x.name for x in bpy.context.scene.cfx_agents.coll]
+        ag = [x.name for x in bpy.context.scene.iai_agents.coll]
 
-        if bpy.context.scene.cfx_agents_default.startType == "Next":
+        if bpy.context.scene.iai_agents_default.startType == "Next":
             group = self.findNext()
         else:
-            group = bpy.context.scene.cfx_agents_default.setno
+            group = bpy.context.scene.iai_agents_default.setno
 
         for i in bpy.context.selected_objects:
             if i.name not in ag:
-                item = context.scene.cfx_agents.coll.add()
+                item = context.scene.iai_agents.coll.add()
                 item.name = i.name
                 item.group = group
-                if bpy.context.scene.cfx_agents_default.contType == "Inc":
-                    if context.scene.cfx_agents_default.startType == "Next":
+                if bpy.context.scene.iai_agents_default.contType == "Inc":
+                    if context.scene.iai_agents_default.startType == "Next":
                         group = self.findNext()
                     else:
-                        bpy.context.scene.cfx_agents_default.setno += 1
-                        group = bpy.context.scene.cfx_agents_default.setno
+                        bpy.context.scene.iai_agents_default.setno += 1
+                        group = bpy.context.scene.iai_agents_default.setno
                 item.type = 'NONE'
-        bpy.ops.scene.cfx_groups_populate()
+        bpy.ops.scene.iai_groups_populate()
         return {'FINISHED'}
 
 
 class SCENE_OT_agent_remove(Operator):
-    bl_idname = "scene.cfx_agents_remove"
+    bl_idname = "scene.iai_agents_remove"
     bl_label = "Remove"
 
     @classmethod
     def poll(cls, context):
         s = context.scene
-        return len(s.cfx_agents.coll) > s.cfx_agents.index >= 0
+        return len(s.iai_agents.coll) > s.iai_agents.index >= 0
 
     def execute(self, context):
         s = context.scene
-        s.cfx_agents.coll.remove(s.cfx_agents.index)
-        if s.cfx_agents.index > 0:
-            s.cfx_agents.index -= 1
+        s.iai_agents.coll.remove(s.iai_agents.index)
+        if s.iai_agents.index > 0:
+            s.iai_agents.index -= 1
         return {'FINISHED'}
 
 
 class SCENE_OT_agent_move(Operator):
-    bl_idname = "scene.cfx_agents_move"
+    bl_idname = "scene.iai_agents_move"
     bl_label = "Move"
 
     direction = EnumProperty(items=(
@@ -195,14 +198,14 @@ class SCENE_OT_agent_move(Operator):
     @classmethod
     def poll(cls, context):
         s = context.scene
-        return len(s.cfx_agents.coll) > s.cfx_agents.index >= 0
+        return len(s.iai_agents.coll) > s.iai_agents.index >= 0
 
     def execute(self, context):
         s = context.scene
         d = -1 if self.direction == 'UP' else 1
-        new_index = (s.cfx_agents.index + d) % len(s.cfx_agents.coll)
-        s.cfx_agents.coll.move(s.cfx_agents.index, new_index)
-        s.cfx_agents.index = new_index
+        new_index = (s.iai_agents.index + d) % len(s.iai_agents.coll)
+        s.iai_agents.coll.move(s.iai_agents.index, new_index)
+        s.iai_agents.index = new_index
         return {'FINISHED'}
 
 
@@ -228,19 +231,19 @@ class SCENE_UL_selected(UIList):
             # no idea when this is actually used
 
 
-class SCENE_OT_cfx_selected_populate(Operator):
-    bl_idname = "scene.cfx_selected_populate"
+class SCENE_OT_iai_selected_populate(Operator):
+    bl_idname = "scene.iai_selected_populate"
     bl_label = "See group"
 
     def execute(self, context):
-        self.group = bpy.context.scene.cfx_groups
-        self.group_selected = bpy.context.scene.cfx_agents_selected
+        self.group = bpy.context.scene.iai_groups
+        self.group_selected = bpy.context.scene.iai_agents_selected
         self.group_selected.coll.clear()
 
-        for i in bpy.context.scene.cfx_agents.coll:
+        for i in bpy.context.scene.iai_agents.coll:
             if self.group.index < len(self.group.coll):
                 if i.group == int(self.group.coll[self.group.index].name):
-                    item = context.scene.cfx_agents_selected.coll.add()
+                    item = context.scene.iai_agents_selected.coll.add()
                     item.name = i.name
         return {'FINISHED'}
 
@@ -249,18 +252,8 @@ class SCENE_OT_cfx_selected_populate(Operator):
 # =============== SIMULATION START ===============#
 
 
-class SCENE_OT_cfx_startui(Operator):
-    bl_idname = "scene.cfx_startui"
-    bl_label = "start UI"
-
-    def execute(self, context):
-        setCfxBrains()
-        runui(update_cfx_brains, cfx_brains)
-        return {'FINISHED'}
-
-
-class SCENE_OT_cfx_start(Operator):
-    bl_idname = "scene.cfx_start"
+class SCENE_OT_iai_start(Operator):
+    bl_idname = "scene.iai_start"
     bl_label = "Start simulation"
 
     def execute(self, context):
@@ -271,15 +264,15 @@ class SCENE_OT_cfx_start(Operator):
             del sim
         sim = Simulation()
         sim.actions()
-        """for ag in bpy.context.scene.cfx_agents.coll:
+        """for ag in bpy.context.scene.iai_agents.coll:
             sim.newagent(ag.name)"""
-        sim.createAgents(bpy.context.scene.cfx_agents.coll)
+        sim.createAgents(bpy.context.scene.iai_agents.coll)
         sim.startFrameHandler()
         return {'FINISHED'}
 
 
-class SCENE_OT_cfx_stop(Operator):
-    bl_idname = "scene.cfx_stop"
+class SCENE_OT_iai_stop(Operator):
+    bl_idname = "scene.iai_stop"
     bl_label = "Unregister the advance frame handler"
 
     def execute(self, context):
@@ -295,11 +288,11 @@ global initialised
 initialised = False
 
 
-class SCENE_PT_crowdfx(Panel):
-    """Creates CrowdFX Panel in the scene properties window. The first panel
+class SCENE_PT_inaite(Panel):
+    """Creates inaite Panel in the scene properties window. The first panel
     that this add-on creates"""
-    bl_label = "CrowdFX"
-    bl_idname = "SCENE_PT_crowdfx"
+    bl_label = "InAIte"
+    bl_idname = "SCENE_PT_inaite"
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
     bl_context = "scene"
@@ -313,8 +306,8 @@ class SCENE_PT_crowdfx(Panel):
         sce = context.scene
 
         row = layout.row()
-        row.template_list("SCENE_UL_group", "", sce.cfx_groups,
-                          "coll", sce.cfx_groups, "index")
+        row.template_list("SCENE_UL_group", "", sce.iai_groups,
+                          "coll", sce.iai_groups, "index")
 
         col = row.column()
         sub = col.column(True)
@@ -326,25 +319,25 @@ class SCENE_PT_crowdfx(Panel):
         sub.operator(blid_gm, text="", icon="TRIA_UP").direction = 'UP'
         sub.operator(blid_gm, text="", icon="TRIA_DOWN").direction = 'DOWN'
         sub.separator()
-        blid_sp = SCENE_OT_cfx_selected_populate.bl_idname
+        blid_sp = SCENE_OT_iai_selected_populate.bl_idname
         sub.operator(blid_sp, text="", icon="PLUS")
 
         #####
 
         layout.label(text="Selected Agents")
-        layout.template_list("SCENE_UL_selected", "", sce.cfx_agents_selected,
-                             "coll", sce.cfx_agents_selected, "index")
+        layout.template_list("SCENE_UL_selected", "", sce.iai_agents_selected,
+                             "coll", sce.iai_agents_selected, "index")
 
         #####
 
         layout.label(text="All agents:")
         row = layout.row()
-        row.template_list("SCENE_UL_agents", "", sce.cfx_agents,
-                          "coll", sce.cfx_agents, "index")
+        row.template_list("SCENE_UL_agents", "", sce.iai_agents,
+                          "coll", sce.iai_agents, "index")
 
         col = row.column()
         sub = col.column(True)
-        blid_ap = SCENE_OT_cfx_agents_populate.bl_idname
+        blid_ap = SCENE_OT_iai_agents_populate.bl_idname
         sub.operator(blid_ap, text="", icon="ZOOMIN")
         blid_ar = SCENE_OT_agent_remove.bl_idname
         sub.operator(blid_ar, text="", icon="ZOOMOUT")
@@ -355,7 +348,7 @@ class SCENE_PT_crowdfx(Panel):
         sub.operator(blid_am, text="", icon="TRIA_UP").direction = 'UP'
         sub.operator(blid_am, text="", icon="TRIA_DOWN").direction = 'DOWN'
 
-        default = bpy.context.scene.cfx_agents_default
+        default = bpy.context.scene.iai_agents_default
         layout.label(text="Default agents group:")
 
         row = layout.row()
@@ -366,9 +359,8 @@ class SCENE_PT_crowdfx(Panel):
         row.prop(default, "contType", expand=True)
 
         row = layout.row()
-        row.operator(SCENE_OT_cfx_startui.bl_idname)
-        row.operator(SCENE_OT_cfx_start.bl_idname)
-        row.operator(SCENE_OT_cfx_stop.bl_idname)
+        row.operator(SCENE_OT_iai_start.bl_idname)
+        row.operator(SCENE_OT_iai_stop.bl_idname)
 
         row = layout.row()
         row.label(text="ALWAYS save before pressing the start button!")
@@ -378,23 +370,27 @@ def register():
     """Called by Blender to setup the script. Analogous to the constructor of
     an object but for the add-on instead"""
     bpy.utils.register_module(__name__)
-    # I think this registers the SCENE_PT_crowdfx class...
+    # I think this registers the SCENE_PT_inaite class...
     # ...or maybe all the classes in the file?
 
     global action_register
-    from .cfx_actions import action_register
+    from .iai_actions import action_register
     global action_unregister
-    from .cfx_actions import action_unregister
+    from .iai_actions import action_unregister
 
     global event_register
-    from .cfx_events import event_register
+    from .iai_events import event_register
     global event_unregister
-    from .cfx_events import event_unregister
+    from .iai_events import event_unregister
 
-    from .cfx_blenderData import registerTypes
+    from .iai_blenderData import registerTypes
 
-    global setCfxBrains
-    from .cfx_blenderData import setCfxBrains
+    global setiaiBrains
+    from .iai_blenderData import setiaiBrains
+
+    global iai_bpyNodes
+    from . import iai_bpyNodes
+    iai_bpyNodes.register()
 
     registerTypes()
     action_register()
@@ -406,27 +402,26 @@ def initialise():
     sce = bpy.context.scene
 
     global Simulation
-    from .cfx_simulate import Simulation
+    from .iai_simulate import Simulation
 
-    global runui
-    from .cfx_gui import runui
+    global update_iai_brains
+    from .iai_blenderData import update_iai_brains
 
-    global update_cfx_brains
-    from .cfx_blenderData import update_cfx_brains
-
-    global cfx_brains
-    cfx_brains = bpy.context.scene.cfx_brains
+    global iai_brains
+    iai_brains = bpy.context.scene.iai_brains
 
 
 def unregister():
     """Called by Blender to remove the add-on. Analogous to the destructor of
     an object but for the add-on instead"""
     bpy.utils.unregister_module(__name__)
-    # ...and this one unregisters the SCENE_PT_crowdfx
+    # ...and this one unregisters the SCENE_PT_inaite
     action_unregister()
     event_unregister()
-    from .cfx_blenderData import unregisterAllTypes
+    from .iai_blenderData import unregisterAllTypes
     unregisterAllTypes()
+
+    # iai_bpyNodes.unregister()
 
 if __name__ == "__main__":
     register()

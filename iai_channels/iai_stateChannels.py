@@ -1,5 +1,5 @@
 import bpy
-from .cfx_masterChannels import MasterChannel as Mc
+from .iai_masterChannels import MasterChannel as Mc
 
 
 class State(Mc):

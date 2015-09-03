@@ -4,7 +4,7 @@ sce = bpy.context.scene
 from math import *
 from mathutils import *
 
-from .cfx_masterChannels import MasterChannel as Mc
+from .iai_masterChannels import MasterChannel as Mc
 
 import bmesh
 
@@ -123,12 +123,38 @@ class GroundTree():
                 else:
                     v -= 1
             # print("At 2")
-            afaces = []
+            afaces = [set()]
+            # List of lists. One list for each of the areas (leaf nodes)
+            #containing faces connected to the right side
             rowSumTime = 0
             removeTime = 0
-            for a in range(len(arows) + 1):
-                toremove = set()
+            rollingSum = {}
+            for row in arows:
                 t = time.time()
+                for faceID in row.faces:
+                    if faceID in rollingSum:
+                        rollingSum[faceID] += 1
+                    else:
+                        rollingSum[faceID] = 1
+                rowSumTime += time.time() - t
+
+                t = time.time()
+                afaces.append(set())
+                toDelete = []
+                # Temporary for dictionary entries that are about to be deleted
+                for face in rollingSum.keys():
+                    if rollingSum[face] >= 3:
+                        toDelete.append(face)
+                    else:
+                        afaces[-1].add(face)
+
+                #Clean up any faces that have already been completely seen
+                for toDel in toDelete:
+                    del rollingSum[toDel]
+                removeTime += time.time() - t
+            """for a in range(len(arows) + 1):
+                t = time.time()
+                toremove = set()
                 fc = rowSum([z.faces for z in arows[:a]])
                 rowSumTime += time.time() - t
                 t = time.time()
@@ -138,11 +164,13 @@ class GroundTree():
                         toremove.add(f)
                 ufc -= toremove
                 removeTime += time.time() - t
-                afaces.append(ufc)
+                afaces.append(ufc)"""
             print("rowSumTime", rowSumTime)
             print("removeTime", removeTime)
             # print("arows", [a.co for a in arows])
             print("Constructing tree")
+            print("Construct lengths. afaces: " + str(len(afaces) +
+                  " arows " + len(arows)))
             return constructTree(afaces, arows, axis)
 
         self.xtree = makeTree(vertslist, lambda v: v.x)

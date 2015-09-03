@@ -45,6 +45,6 @@ def getmotions():
     """Turn all the entries for actions into action objects"""
     sce = bpy.context.scene
     result = {}
-    for m in sce.cfx_actions.coll:
+    for m in sce.iai_actions.coll:
         result[m.name] = action(m.name, m.action, m.motion)
     return result

@@ -60,6 +60,10 @@ screen shots
 # misc #
 scripts/
 BVH/
+blender test files/
+misc/
+DLLS/
+Error message/
 
 *.cys
 *.png

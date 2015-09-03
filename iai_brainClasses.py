@@ -1,8 +1,8 @@
-from . import cfx_channels as chan
-import PySide
+from . import iai_channels as chan
 import random
 import functools
 import bpy
+import mathutils
 
 sce = bpy.context.scene
 
@@ -21,6 +21,7 @@ class Impulse():
 
 
 class ImpulseContainer():
+    # TODO Isn't this just a dictionary?!?!?!
     def __init__(self, cont):
         self.cont = cont
 
@@ -30,7 +31,6 @@ class ImpulseContainer():
 
     """def __setitem__(self, key, value):
         self.cont[key] = value
-
     def __delitem__(self, key):
         del self.cont[key]"""
     # This shouldn't be allowed but commented because I'm not sure if this
@@ -44,16 +44,24 @@ class ImpulseContainer():
     def __contains__(self, item):
         return item in self.cont
 
+    def __len__(self):
+        return len(self.cont)
+
+    def values(self):
+        return self.cont.values()
+
 
 class Neuron():
     """The representation of the nodes. Not to be used on own"""
-    def __init__(self, brain):
+    def __init__(self, brain, bpyNode):
         self.brain = brain
         self.neurons = self.brain.neurons
         self.inputs = []
         # self.parent = None
         self.result = None
         # self.active = True # Don't think this is used???
+        self.fillOutput = bpy.props.BoolProperty(default=True)
+        self.bpyNode = bpyNode
 
     def evaluate(self):
         """Called by any neurons that take this neuron as an input"""
@@ -80,7 +88,38 @@ class Neuron():
                 output = im
             else:
                 output = ImpulseContainer({"None": im})
+                # TODO this check seems to be done twice
             self.result = output
+            # This next section is for the visual feedback on the node editor
+            if self.brain.isActiveSelection:
+                self.bpyNode.use_custom_color = True
+                total = 0
+                av = sum(output.values()) / len(output)
+                if av > 0:
+                    startHue = 0.333
+                else:
+                    startHue = 0.5
+
+                if av > 1:
+                    hueChange = -(-(abs(av)+1)/abs(av) + 2) * (1/3)
+                    hue = 0.5 + hueChange
+                    sat = 1
+                elif av < -1:
+                    hueChange = (-(abs(av)+1)/abs(av) + 2) * (1/3)
+                    hue = 0.333 + hueChange
+                    sat = 1
+                else:
+                    hue = startHue
+
+                if abs(av) < 1:
+                    sat = abs(av)**(1/2)
+                else:
+                    sat = 1
+                c = mathutils.Color()
+                c.hsv = hue, sat, 1
+                self.bpyNode.color = c
+                self.bpyNode.keyframe_insert("color")
+                self.bpyNode.update()
             return output
 
     def newFrame(self):
@@ -113,7 +152,7 @@ class State():
         self.currentframe = 0
         act = self.settings["Action"]  # STRING
         if act in self.tree.brain.sim.actions:
-            actionobj = self.tree.brain.sim.actions[act]  # from .cfx_motion.py
+            actionobj = self.tree.brain.sim.actions[act]  # from .iai_motion.py
             obj = sce.objects[userid]  # bpy object
             tr = obj.animation_data.nla_tracks.new()  # NLA track
             action = actionobj.action  # bpy action
@@ -173,11 +212,9 @@ class State():
                     return final[0][0]
                 totals = []
                 running_total = 0
-
                 for w in final:
                     running_total += w[1]
                     totals.append(running_total)
-
                 rnd = random.random() * running_total
                 for i, total in enumerate(totals):
                     if rnd < total:
@@ -288,23 +325,25 @@ class Brain():
         self.lvars = self.sim.lvars
         self.outvars = {}
         self.tags = {}
+        self.isActiveSelection = False
 
     def reset(self):
         self.outvars = {"rx": 0, "ry": 0, "rz": 0,
                         "px": 0, "py": 0, "pz": 0}
-        # self.tags = self.sim.agents[self.currentuser].access["tags"]
-        self.tags = {}
+        self.tags = self.sim.agents[self.currentuser].access["tags"]
+        # self.tags = {}
         self.agvars = self.sim.agents[self.currentuser].agvars
 
     def execute(self, userid, statetree):
         # TODO could userid be replaced with self.currentuser?
         """Called for each time the agents needs to evaluate"""
         self.currentuser = userid
+        self.isActiveSelection = bpy.context.active_object.name == userid
         self.reset()
         for name, var in self.lvars.items():
             var.setuser(userid)
-        for node in self.neurons.values():
-            node.newFrame()
+        for neur in self.neurons.values():
+            neur.newFrame()
         for out in self.outputs:
             self.neurons[out].evaluate()
         statetree.execute(userid)

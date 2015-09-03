@@ -10,7 +10,7 @@ D = bpy.data.objects
 
 class Agent:
     """Represents each of the agents in the scene"""
-    def __init__(self, blenderid, brain):
+    def __init__(self, blenderid, brain, momentum):
         print("Blender id", blenderid)
         self.sim = brain.sim
         self.id = blenderid
@@ -54,14 +54,31 @@ class Agent:
         """Clear out the nla"""
 
         D[blenderid].animation_data_clear()
+        D[blenderid].keyframe_insert(data_path="location", frame=1)
+        D[blenderid].keyframe_insert(data_path="rotation_euler", frame=1)
+
+        self.momentum = momentum
 
     def step(self):
+        # TODO remove all the rsx/y/z and sx/y/z because they're not needed
         self.brain.execute(self.id, self.statetree)
         if D[self.id].select:
-            print(self.id, self.brain.tags)
+            print("ID: ", self.id, "Tags: ", self.brain.tags,
+                  "outvars: ", self.brain.outvars)
+
+        if self.momentum:
+            oldrx = self.rx
+            oldry = self.ry
+            oldrz = self.rz
+
         self.rx = self.brain.outvars["rx"] if self.brain.outvars["rx"] else 0
         self.ry = self.brain.outvars["ry"] if self.brain.outvars["ry"] else 0
         self.rz = self.brain.outvars["rz"] if self.brain.outvars["rz"] else 0
+
+        if self.momentum:
+            self.rx = (self.rx + oldrx) / 2
+            self.ry = (self.ry + oldry) / 2
+            self.rz = (self.rz + oldrz) / 2
 
         self.arx += self.rx + self.rsx
         self.rx = 0
@@ -72,9 +89,19 @@ class Agent:
         self.arz += self.rz + self.rsz
         self.rz = 0
 
+        if self.momentum:
+            oldpx = self.px
+            oldpy = self.py
+            oldpz = self.pz
+
         self.px = self.brain.outvars["px"] if self.brain.outvars["px"] else 0
         self.py = self.brain.outvars["py"] if self.brain.outvars["py"] else 0
         self.pz = self.brain.outvars["pz"] if self.brain.outvars["pz"] else 0
+
+        if self.momentum:
+            self.px = (self.px + oldpx) / 2
+            self.py = (self.py + oldpy) / 2
+            self.pz = (self.pz + oldpz) / 2
 
         self.external["tags"] = self.brain.tags
         self.agvars = self.brain.agvars
@@ -82,9 +109,6 @@ class Agent:
         move = mathutils.Vector((self.px + self.sx,
                                  self.py + self.sy,
                                  self.pz + self.sz))
-        self.px = 0
-        self.py = 0
-        self.pz = 0
 
         z = mathutils.Matrix.Rotation(-self.arz, 4, 'Z')
         y = mathutils.Matrix.Rotation(-self.ary, 4, 'Y')
@@ -92,6 +116,8 @@ class Agent:
 
         rotation = x * y * z
         result = move * rotation
+
+        self.globalVelocity = result
 
         self.apx += result[0]
 

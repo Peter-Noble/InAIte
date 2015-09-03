@@ -5,13 +5,13 @@ sce = bpy.context.scene
 O = sce.objects
 
 import sys
-from .cfx_compileBrain import compileagent
+from .iai_compileBrain import compileagent
 
-from . import cfx_channels as chan
+from . import iai_channels as chan
 wr = chan.Wrapper
 
-from .cfx_agent import Agent
-from .cfx_actions import getmotions
+from .iai_agent import Agent
+from .iai_actions import getmotions
 
 
 class Simulation():
@@ -40,14 +40,15 @@ class Simulation():
 
     def newagent(self, name):
         """Set up an agent"""
-        group = sce.cfx_agents.coll[name].group
-        ty = sce.cfx_groups.coll[group-1].type
-        for a in sce.cfx_brains:
-            if a.identify == ty:
+        group = sce.iai_agents.coll[name].group
+        groupEntry = sce.iai_groups.coll[group-1]
+        ty = sce.iai_groups.coll[group-1].type
+        for a in bpy.data.node_groups:
+            if a.name == ty:
                 if ty not in self.compbrains:
-                    cb = compileagent(a.brain, a.dispname, self)
+                    cb = compileagent(a, self)
                     self.compbrains[ty] = cb
-                ag = Agent(name, self.compbrains[ty])
+                ag = Agent(name, self.compbrains[ty], groupEntry.momentum)
                 self.agents[name] = ag
 
     def createAgents(self, agents):

@@ -21,10 +21,10 @@ def rreload(module):
     for attribute_name in dir(module):
         attribute = getattr(module, attribute_name)
         if type(attribute) is ModuleType:
-            if attribute not in done and attribute.__name__[:3] == "cfx":
+            if attribute not in done and attribute.__name__[:3] == "iai":
                 rreload(attribute)
 
-import CrowdFX
-rreload(CrowdFX)
-from CrowdFX import bl_info, register, unregister
+import inaite
+rreload(inaite)
+from inaite import bl_info, register, unregister
 register()

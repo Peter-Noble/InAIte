@@ -29,43 +29,43 @@ class brain_entry(PropertyGroup):
     brain = StringProperty(default="")
 
 
-def setCfxBrains():
+def setiaiBrains():
     """loads the brains from the .blend or creates them if they don't already
     exist"""
     for b in default_slots:
-        if b[0] not in [br.dispname for br in bpy.context.scene.cfx_brains]:
-            item = bpy.context.scene.cfx_brains.add()
+        if b[0] not in [br.dispname for br in bpy.context.scene.iai_brains]:
+            item = bpy.context.scene.iai_brains.add()
             item.identify = b[0]
             item.dispname = b[0]
             item.brain = b[1]
-    cfx_brains = bpy.context.scene.cfx_brains
-    print("Loaded brains", cfx_brains)
+    iai_brains = bpy.context.scene.iai_brains
+    print("Loaded brains", iai_brains)
 
 
-def cfx_brains_callback(scene, context):
+def iai_brains_callback(scene, context):
     """Turns the brain data into a format that EnumProperty can take"""
-    # print("Getting brains", cfx_brains)
-    cfx_brains = bpy.context.scene.cfx_brains
-    lis = [(x.identify, x.dispname, x.brain,) for x in cfx_brains]
+    # print("Getting brains", iai_brains)
+    iai_brains = bpy.context.scene.iai_brains
+    lis = [(x.identify, x.dispname, x.brain,) for x in iai_brains]
     return lis
 
 
 def updateagents(self, context):
-    bpy.ops.scene.cfx_groups_populate()
-    bpy.ops.scene.cfx_selected_populate()
+    bpy.ops.scene.iai_groups_populate()
+    bpy.ops.scene.iai_selected_populate()
 
 
 class agent_entry(PropertyGroup):
     """The data structure for the agent entries"""
     type = EnumProperty(
-        items=cfx_brains_callback,
+        items=iai_brains_callback,
         update=updateagents
     )
     group = IntProperty(update=updateagents)
 
 
 class agents_collection(PropertyGroup):
-    """cfx_agents, cfx_agents_selected"""
+    """iai_agents, iai_agents_selected"""
     coll = CollectionProperty(type=agent_entry)
     index = IntProperty()
 
@@ -87,29 +87,31 @@ class default_agents_type(PropertyGroup):
     setno = IntProperty(min=1)
 
 
-def setCfxAgents():
-    """register cfx_agents type with blender"""
+def setiaiAgents():
+    """register iai_agents type with blender"""
     PP = PointerProperty
-    bpy.types.Scene.cfx_agents = PP(type=agents_collection)
-    bpy.types.Scene.cfx_agents_selected = PP(type=agents_collection)
-    bpy.types.Scene.cfx_agents_default = PP(type=default_agents_type)
+    bpy.types.Scene.iai_agents = PP(type=agents_collection)
+    bpy.types.Scene.iai_agents_selected = PP(type=agents_collection)
+    bpy.types.Scene.iai_agents_default = PP(type=default_agents_type)
 
 
 def GroupChange(self, context):
     """callback for changing the type of one of the groups"""
-    for agent in bpy.context.scene.cfx_agents.coll:
+    for agent in bpy.context.scene.iai_agents.coll:
         if str(agent.group) == self.name:
             agent.type = self.type
 
 
 class group_entry(PropertyGroup):
     """The data structure for the group entries"""
-    type = EnumProperty(
-        items=cfx_brains_callback,
+    """type = EnumProperty(
+        items=iai_brains_callback,
         update=GroupChange
-    )
+    )"""
+    type = StringProperty()
     group = IntProperty(min=0)
     # TODO the group isn't actually used... it's the name that is used
+    momentum = BoolProperty(default=True)
 
 
 class groups_collection(PropertyGroup):
@@ -117,16 +119,17 @@ class groups_collection(PropertyGroup):
     index = IntProperty()
 
 
-def setCfxGroups():
-    """register cfx_groups type with blender"""
-    bpy.types.Scene.cfx_groups = PointerProperty(type=groups_collection)
+def setiaiGroups():
+    """register iai_groups type with blender"""
+    bpy.types.Scene.iai_groups = PointerProperty(type=groups_collection)
 
 
-def update_cfx_brains(brains):
+def update_iai_brains(brains):
+    # TODO not used anymore?
     """passed to the GUI so that it can update the brain types"""
-    cfx_brains = bpy.context.scene.cfx_brains
+    iai_brains = bpy.context.scene.iai_brains
     idents = {}
-    for x in cfx_brains:
+    for x in iai_brains:
         idents[x.identify] = x
     # print("brains", brains)
     for bb in brains:
@@ -137,14 +140,14 @@ def update_cfx_brains(brains):
             idents[bb[1].upper()].brain = bb[2]
         else:
             # print("New brain", bb[0], "added")
-            item = cfx_brains.add()
+            item = iai_brains.add()
             item.identify = bb[1].upper()
             item.dispname = bb[1]
             item.brain = bb[2]
-    setCfxBrains()
-    for g in bpy.context.scene.cfx_groups.coll:
-        if g.type not in [x.identify for x in cfx_brains]:
-            g.type = cfx_brains[0][1].upper()
+    setiaiBrains()
+    for g in bpy.context.scene.iai_groups.coll:
+        if g.type not in [x.identify for x in iai_brains]:
+            g.type = iai_brains[0][1].upper()
             # print(g, g.type)
 
 registered = False
@@ -155,7 +158,7 @@ def registerTypes():
     global registered
     if not registered:
         # bpy.utils.register_module(__name__)
-        # I think this registers the SCENE_PT_crowdfx class...
+        # I think this registers the SCENE_PT_inaite class...
         # ...or maybe all the classes in the file?
         bpy.utils.register_class(brain_entry)
         bpy.utils.register_class(agent_entry)
@@ -164,24 +167,24 @@ def registerTypes():
         bpy.utils.register_class(group_entry)
         bpy.utils.register_class(groups_collection)
         registered = True
-        setCfxGroups()
-        setCfxAgents()
-        bpy.types.Scene.cfx_brains = CollectionProperty(type=brain_entry)
+        setiaiGroups()
+        setiaiAgents()
+        bpy.types.Scene.iai_brains = CollectionProperty(type=brain_entry)
 
 
 def unregisterAllTypes():
     # bpy.utils.unregister_module(__name__)
-    # ...and this one unregisters the SCENE_PT_crowdfx
+    # ...and this one unregisters the SCENE_PT_inaite
     bpy.utils.unregister_class(brain_entry)
     bpy.utils.unregister_class(agent_entry)
     bpy.utils.unregister_class(agents_collection)
     bpy.utils.unregister_class(default_agents_type)
     bpy.utils.unregister_class(group_entry)
     bpy.utils.unregister_class(groups_collection)
-    del bpy.types.Scene.cfx_agents
-    del bpy.types.Scene.cfx_groups
-    del bpy.types.Scene.cfx_agents_selected
-    del bpy.types.Scene.cfx_agents_default
-    del bpy.types.Scene.cfx_brains
+    del bpy.types.Scene.iai_agents
+    del bpy.types.Scene.iai_groups
+    del bpy.types.Scene.iai_agents_selected
+    del bpy.types.Scene.iai_agents_default
+    del bpy.types.Scene.iai_brains
 
 # =============== DATA END ===============#

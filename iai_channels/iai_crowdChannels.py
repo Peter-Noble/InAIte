@@ -1,5 +1,5 @@
 import bpy
-from .cfx_masterChannels import MasterChannel as Mc
+from .iai_masterChannels import MasterChannel as Mc
 
 
 class Crowd(Mc):
@@ -8,4 +8,4 @@ class Crowd(Mc):
         Mc.__init__(self, sim)
 
     def allagents(self):
-        return bpy.context.scene.cfx_agents
+        return bpy.context.scene.iai_agents

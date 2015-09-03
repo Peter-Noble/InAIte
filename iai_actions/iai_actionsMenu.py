@@ -18,34 +18,34 @@ class actions_collection(PropertyGroup):
     index = IntProperty()
 
 
-class SCENE_OT_cfx_actions_populate(Operator):
-    bl_idname = "scene.cfx_actions_populate"
-    bl_label = "Populate cfx actions list"
+class SCENE_OT_iai_actions_populate(Operator):
+    bl_idname = "scene.iai_actions_populate"
+    bl_label = "Populate iai actions list"
 
     def execute(self, context):
-        item = context.scene.cfx_actions.coll.add()
+        item = context.scene.iai_actions.coll.add()
         return {'FINISHED'}
 
 
 class SCENE_OT_action_remove(Operator):
-    bl_idname = "scene.cfx_actions_remove"
+    bl_idname = "scene.iai_actions_remove"
     bl_label = "Remove"
 
     @classmethod
     def poll(cls, context):
         s = context.scene
-        return len(s.cfx_actions.coll) > s.cfx_actions.index >= 0
+        return len(s.iai_actions.coll) > s.iai_actions.index >= 0
 
     def execute(self, context):
         s = context.scene
-        s.cfx_actions.coll.remove(s.cfx_actions.index)
-        if s.cfx_actions.index > 0:
-            s.cfx_actions.index -= 1
+        s.iai_actions.coll.remove(s.iai_actions.index)
+        if s.iai_actions.index > 0:
+            s.iai_actions.index -= 1
         return {'FINISHED'}
 
 
 class SCENE_OT_agent_move(Operator):
-    bl_idname = "scene.cfx_agents_move"
+    bl_idname = "scene.iai_agents_move"
     bl_label = "Move"
 
     direction = EnumProperty(items=(
@@ -56,14 +56,14 @@ class SCENE_OT_agent_move(Operator):
     @classmethod
     def poll(cls, context):
         s = context.scene
-        return len(s.cfx_actions.coll) > s.cfx_actions.index >= 0
+        return len(s.iai_actions.coll) > s.iai_actions.index >= 0
 
     def execute(self, context):
         s = context.scene
         d = -1 if self.direction == 'UP' else 1
-        new_index = (s.cfx_actions.index + d) % len(s.cfx_actions.coll)
-        s.cfx_actions.coll.move(s.cfx_actions.index, new_index)
-        s.cfx_actions.index = new_index
+        new_index = (s.iai_actions.index + d) % len(s.iai_actions.coll)
+        s.iai_actions.coll.move(s.iai_actions.index, new_index)
+        s.iai_actions.index = new_index
         return {'FINISHED'}
 
 
@@ -85,8 +85,8 @@ class SCENE_UL_action(UIList):
 
 
 class SCENE_PT_action(Panel):
-    """Creates CrowdFX Panel in the scene properties window"""
-    bl_label = "CrowdFX - Actions"
+    """Creates inaite Panel in the scene properties window"""
+    bl_label = "inaite - Actions"
     bl_idname = "SCENE_PT_action"
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
@@ -103,12 +103,12 @@ class SCENE_PT_action(Panel):
 
         sce = bpy.context.scene
 
-        row.template_list("SCENE_UL_action", "", sce.cfx_actions,
-                          "coll", sce.cfx_actions, "index")
+        row.template_list("SCENE_UL_action", "", sce.iai_actions,
+                          "coll", sce.iai_actions, "index")
 
         col = row.column()
         sub = col.column(True)
-        blid_ap = SCENE_OT_cfx_actions_populate.bl_idname
+        blid_ap = SCENE_OT_iai_actions_populate.bl_idname
         sub.operator(blid_ap, text="", icon="ZOOMIN")
         blid_ar = SCENE_OT_action_remove.bl_idname
         sub.operator(blid_ar, text="", icon="ZOOMOUT")
@@ -123,23 +123,23 @@ class SCENE_PT_action(Panel):
 def action_register():
     # bpy.utils.register_module(__name__)
     bpy.utils.register_class(action_entry)
-    bpy.utils.register_class(SCENE_OT_cfx_actions_populate)
+    bpy.utils.register_class(SCENE_OT_iai_actions_populate)
     bpy.utils.register_class(SCENE_OT_action_remove)
     bpy.utils.register_class(SCENE_OT_agent_move)
     bpy.utils.register_class(actions_collection)
     bpy.utils.register_class(SCENE_UL_action)
     bpy.utils.register_class(SCENE_PT_action)
-    bpy.types.Scene.cfx_actions = PointerProperty(type=actions_collection)
+    bpy.types.Scene.iai_actions = PointerProperty(type=actions_collection)
     # bpy.utils.register_class(SCENE_UL_action)
 
 
 def action_unregister():
     # bpy.utils.unregister_module(__name__)
-    # del bpy.types.Scene.cfx_actions
+    # del bpy.types.Scene.iai_actions
     bpy.utils.unregister_class(SCENE_UL_action)
     bpy.utils.unregister_class(SCENE_PT_action)
     bpy.utils.unregister_class(SCENE_OT_agent_move)
     bpy.utils.unregister_class(SCENE_OT_action_remove)
-    bpy.utils.unregister_class(SCENE_OT_cfx_actions_populate)
+    bpy.utils.unregister_class(SCENE_OT_iai_actions_populate)
     bpy.utils.unregister_class(actions_collection)
     bpy.utils.unregister_class(action_entry)
