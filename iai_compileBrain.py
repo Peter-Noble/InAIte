@@ -6,13 +6,20 @@ from .iai_brainClasses import Neuron, Brain, State, StateTree
 import functools
 
 
-def getInput(socket):
-    print("Got here")
-    fr = socket.links[0].from_node
+def getInput(link):
+    fr = link.from_node
     if fr.bl_idname == "NodeReroute":
-        return getInput(fr.inputs[0])
+        return getInput(fr.inputs[0].links[0])
     else:
         return fr.name
+
+
+def getInputs(inputs):
+    output = []
+    for link in inputs.links:
+        output.append(getInput(link))
+    print("Outputs", output)
+    return output
 
 
 def compilestatetree(toload, brain):
@@ -34,9 +41,7 @@ def compilebrain(category, sim, newtree):
             item.parent = "NOT IMPLEMENTED"
             item.settings = {}
             node.get_settings(item)
-            for inp in node.inputs:
-                if inp.links:
-                    item.inputs.append(getInput(inp))
+            item.inputs += getInputs(node.inputs[0])
             result.neurons[node.name] = item
             hasOutputs = False
             for out in node.outputs:

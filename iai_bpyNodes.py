@@ -45,21 +45,10 @@ class InAIteNode(Node):
     # bl_icon = 'SOUND'
 
     def init(self, context):
-        self.inputs.new("DefaultSocketType", "Input1")
-        self.inputs.new("DefaultSocketType", "...")
+        self.inputs.new("DefaultSocketType", "Input")
+        self.inputs[0].link_limit = 4095
 
         self.outputs.new('DefaultSocketType', "Output")
-
-    def update(self):
-        if self.inputs[-1].is_linked:
-            self.inputs[-1].name = "input{}".format(len(self.inputs))
-            self.inputs.new("DefaultSocketType", "...")
-        else:
-            if len(self.inputs) > 1:
-                self.inputs[-1].name = "..."
-                while not self.inputs[-2].is_linked and len(self.inputs) > 2:
-                    self.inputs.remove(self.inputs[-1])
-                    self.inputs[-1].name = "..."
 
     """# Additional buttons displayed on the node.
     def draw_buttons(self, context, layout):
@@ -234,12 +223,12 @@ class OutputNode(InAIteNode):
     """InAIte Output node"""
     bl_label = "Output"
 
-    Output = EnumProperty(items=[("rx", "rx", "", 1),
+    Output = EnumProperty(items=[("rz", "rz", "", 3),
+                                 ("rx", "rx", "", 1),
                                  ("ry", "ry", "", 2),
-                                 ("rz", "rz", "", 3),
                                  ("px", "px", "", 4),
                                  ("py", "py", "", 5),
-                                 ("pz", "pz", "", 6),
+                                 ("pz", "pz", "", 6)
                                  ])
     MultiInputType = EnumProperty(items=[("AVERAGE", "Average", "", 1),
                                          ("MAX", "Max", "", 2),

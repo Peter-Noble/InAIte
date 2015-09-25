@@ -102,11 +102,11 @@ class Neuron():
 
                 if av > 1:
                     hueChange = -(-(abs(av)+1)/abs(av) + 2) * (1/3)
-                    hue = 0.5 + hueChange
+                    hue = 0.333 + hueChange
                     sat = 1
                 elif av < -1:
                     hueChange = (-(abs(av)+1)/abs(av) + 2) * (1/3)
-                    hue = 0.333 + hueChange
+                    hue = 0.5 + hueChange
                     sat = 1
                 else:
                     hue = startHue
@@ -119,7 +119,7 @@ class Neuron():
                 c.hsv = hue, sat, 1
                 self.bpyNode.color = c
                 self.bpyNode.keyframe_insert("color")
-                self.bpyNode.update()
+                # self.bpyNode.update()
             return output
 
     def newFrame(self):
