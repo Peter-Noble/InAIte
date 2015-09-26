@@ -129,10 +129,10 @@ class LogicSETTAG(Neuron):
         count = 0
         for into in inps:
             for i in into:
-                    if i.val > settings["Threshold"]:
-                        condition = True
-                    total += i.val
-                    count += 1
+                if i.val > settings["Threshold"]:
+                    condition = True
+                total += i.val
+                count += 1
         if settings["UseThreshold"]:
             if condition:
                 if settings["Action"] == "ADD":

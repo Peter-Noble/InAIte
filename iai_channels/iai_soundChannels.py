@@ -112,7 +112,7 @@ class EmptyChannel():
         if attr == "pred":
             return self
         else:
-            return {"None": 0}
+            return None
 
 
 class Channel:

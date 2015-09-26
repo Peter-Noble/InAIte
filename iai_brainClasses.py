@@ -80,45 +80,53 @@ class Neuron():
                 if got:
                     inps.append(got)
             im = self.core(inps, self.settings)
-            if not im:
-                im = {"None": 0}
             if isinstance(im, dict):
                 output = ImpulseContainer(im)
             elif isinstance(im, ImpulseContainer):
+                # TODO this shouldn't be allowed
+                output = im
+            elif not im:
                 output = im
             else:
                 output = ImpulseContainer({"None": im})
-                # TODO this check seems to be done twice
             self.result = output
             # This next section is for the visual feedback on the node editor
             if self.brain.isActiveSelection:
                 self.bpyNode.use_custom_color = True
                 total = 0
-                av = sum(output.values()) / len(output)
-                if av > 0:
-                    startHue = 0.333
-                else:
-                    startHue = 0.5
+                if output:
+                    val = 1
+                    av = sum(output.values()) / len(output)
+                    if av > 0:
+                        startHue = 0.333
+                    else:
+                        startHue = 0.5
 
-                if av > 1:
-                    hueChange = -(-(abs(av)+1)/abs(av) + 2) * (1/3)
-                    hue = 0.333 + hueChange
-                    sat = 1
-                elif av < -1:
-                    hueChange = (-(abs(av)+1)/abs(av) + 2) * (1/3)
-                    hue = 0.5 + hueChange
-                    sat = 1
-                else:
-                    hue = startHue
+                    if av > 1:
+                        hueChange = -(-(abs(av)+1)/abs(av) + 2) * (1/3)
+                        hue = 0.333 + hueChange
+                        sat = 1
+                    elif av < -1:
+                        hueChange = (-(abs(av)+1)/abs(av) + 2) * (1/3)
+                        hue = 0.5 + hueChange
+                        sat = 1
+                    else:
+                        hue = startHue
 
-                if abs(av) < 1:
-                    sat = abs(av)**(1/2)
+                    if abs(av) < 1:
+                        sat = abs(av)**(1/2)
+                    else:
+                        sat = 1
                 else:
-                    sat = 1
+                    hue = 0
+                    sat = 0
+                    val = 0.5
                 c = mathutils.Color()
-                c.hsv = hue, sat, 1
+                c.hsv = hue, sat, val
                 self.bpyNode.color = c
                 self.bpyNode.keyframe_insert("color")
+                #  TODO this would be much better to store and apply when
+                # animation is being replayed.
                 # self.bpyNode.update()
             return output
 
