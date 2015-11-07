@@ -111,7 +111,6 @@ class group_entry(PropertyGroup):
     type = StringProperty()
     group = IntProperty(min=0)
     # TODO the group isn't actually used... it's the name that is used
-    momentum = BoolProperty(default=True)
 
 
 class groups_collection(PropertyGroup):

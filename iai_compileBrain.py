@@ -2,90 +2,57 @@ import bpy
 
 from .iai_nodeFunctions import logictypes, statetypes
 from collections import OrderedDict
-from .iai_brainClasses import Neuron, Brain, State, StateTree
+from .iai_brainClasses import Neuron, Brain, State
 import functools
 
 
-def getInput(link):
-    fr = link.from_node
-    if fr.bl_idname == "NodeReroute":
-        return getInput(fr.inputs[0].links[0])
-    else:
-        return fr.name
-
-
-def getInputs(inputs):
-    output = []
-    for link in inputs.links:
-        output.append(getInput(link))
-    print("Outputs", output)
-    return output
-
-
-def compilestatetree(toload, brain):
-    """Compile the state machine that is used for the animation of an agent"""
-    tree = StateTree(brain)
-    # TODO ...
-    return tree
-
-
-def compilebrain(category, sim, newtree):
-    """Compile the brain that defines how and agent moves and is animated"""
-    result = Brain(category, sim, newtree)
-    """create the connections from the node"""
-    for node in bpy.data.node_groups[category].nodes:
-        if node.bl_idname != "NodeReroute" and node.bl_idname != "NodeFrame":
-            # node.name  -  The identifier
-            # node.bl_idname  -  The type
-            item = logictypes[node.bl_idname](result, node)
-            item.parent = "NOT IMPLEMENTED"
-            item.settings = {}
-            node.get_settings(item)
-            item.inputs += getInputs(node.inputs[0])
-            result.neurons[node.name] = item
-            hasOutputs = False
-            for out in node.outputs:
-                if out.links:
-                    hasOutputs = True
-            if not hasOutputs:
-                result.outputs.append(node.name)
+def getInputs(inp):
+    result = []
+    for link in inp.links:
+        fr = link.from_node
+        if fr.bl_idname == "NodeReroute":
+            result += getInputs(fr.inputs[0])
+        else:
+            result += [fr.name]
     return result
 
 
-def compileagent(brainGroup, sim):
-    """Assemble and agent object from all the parts it needs"""
-    newtree = functools.partial(compilestatetree, None)  # TODO add state trees
-    brain = compilebrain(brainGroup.name, sim, newtree)
-    return brain
+def getOutputs(out):
+    result = []
+    for link in out.links:
+        fr = link.to_node
+        if fr.bl_idname == "NodeReroute":
+            result += getOutputs(fr.outputs[0])
+        else:
+            result += [fr.name]
+    return result
 
 
-def compilestatetreeOLD(toload, brain):
-    """For PySide version"""
-    """Compile the state machine that is used for the animation of an agent"""
-    tree = StateTree(brain)
-    ref = {}  # Temp storage for adding edges
-    for nodeUID in toload["nodes"]:
-        lono = toload["nodes"][nodeUID]
-        item = statetypes[lono["category"][0]](tree)  # create state object
-        settings = lono["settings"]
-        for s in settings:
-            if isinstance(settings[s], str):
-                settings[s] = settings[s].replace("{NEWLINE}", "\n")
-        item.settings = settings
-        if item.start:
-            if tree.current:
-                print("More than one start node isn't supported at the moment")
+def compileBrain(nodeGroup, sim, userid):
+    """Compile the brain that defines how and agent moves and is animated"""
+    result = Brain(sim, userid)
+    """create the connections from the node"""
+    for node in nodeGroup.nodes:
+        if node.bl_idname in logictypes:
+            # node.name  -  The identifier
+            # node.bl_idname  -  The type
+            item = logictypes[node.bl_idname](result, node)
+            node.getSettings(item)
+            item.inputs = getInputs(node.inputs["Input"])
+            item.dependantOn = getOutputs(node.outputs["Dependant"])
+            if not node.outputs["Output"].is_linked:
+                result.outputs.append(node.name)
+            result.neurons[node.name] = item
+        elif node.bl_idname in statetypes:
+            item = statetypes[node.bl_idname](result, node, node.name)
+            node.getSettings(item)
+            item.outputs = getOutputs(node.outputs["To"])
+            print(node.name, "outputs", item.outputs)
+            if node.bl_idname == "StartState":
+                result.currentState = node.name
             else:
-                tree.current = item
-                tree.start = item
-        if item.interrupt:
-            tree.interrupts.append(item)
-        tree.states.append(item)
-        ref[nodeUID] = item
-    if not tree.current and len(toload["nodes"]) > 0:
-        raise Exception("Needs a start node")
-    for edge in toload["edges"]:
-        ref[edge["dest"]].connected.append(ref[edge["source"]])
-        if ref[edge["source"]].interrupt:
-            reg[edge["dest"]].interrupts.append(re[edge["source"]])
-    return tree
+                item.valueInputs = getInputs(node.inputs["Value"])
+                if len(item.valueInputs) != 0:
+                    result.outputs.append(node.name)
+            result.neurons[node.name] = item
+    return result

@@ -24,17 +24,49 @@ class DefaultSocket(NodeSocket):
     # Label for nice name display
     bl_label = 'Default Node Socket'
 
+    filterProperty = EnumProperty(items=[("AVERAGE", "Average", "", 1),
+                                         ("MAX", "Max", "", 2),
+                                         ("MIN", "Min", "", 3)
+                                         ])
+    defaultValueProperty = FloatProperty(default=1.0)
+
     # Optional function for drawing the socket input value
     def draw(self, context, layout, node, text):
-        layout.label(text)
-        """if self.is_output or self.is_linked:
-            layout.label(text)
+        if not self.is_output and node.bl_idname == "ActionState":
+            if self.is_linked:
+                layout.prop(self, "filterProperty", text=text)
+            else:
+                layout.prop(self, "defaultValueProperty", text=text)
         else:
-            layout.prop(self, "myEnumProperty", text=text)"""
+            layout.label(text)
 
     # Socket color
     def draw_color(self, context, node):
         return (0.0, 0.0, 0.0, 0.4)
+
+
+class StateSocket(NodeSocket):
+    """Socket used for state tree transitions"""
+    bl_idname = 'StateSocketType'
+    bl_label = 'State Node Socket'
+
+    def draw(self, context, layout, node, text):
+        layout.label(text)
+
+    def draw_color(self, context, node):
+        return (0.0, 0.0, 0.5, 1.0)
+
+
+class DependanceSocket(NodeSocket):
+    """Socket used for state tree transitions"""
+    bl_idname = 'DependanceSocketType'
+    bl_label = 'Dependance Node Socket'
+
+    def draw(self, context, layout, node, text):
+        layout.label(text)
+
+    def draw_color(self, context, node):
+        return (0.5, 0.0, 0.0, 1.0)
 
 
 class InAIteNode(Node):
@@ -44,22 +76,26 @@ class InAIteNode(Node):
     bl_label = 'Super class'
     # bl_icon = 'SOUND'
 
-    def init(self, context):
-        self.inputs.new("DefaultSocketType", "Input")
-        self.inputs[0].link_limit = 4095
-
-        self.outputs.new('DefaultSocketType', "Output")
-
-    """# Additional buttons displayed on the node.
-    def draw_buttons(self, context, layout):
-        pass"""
-
     @classmethod
     def poll(cls, ntree):
         return ntree.bl_idname == 'InAIteTreeType'
 
 
-class InputNode(InAIteNode):
+class LogicNode(InAIteNode):
+    bl_label = 'Logic super class'
+
+    def init(self, context):
+        self.inputs.new("DefaultSocketType", "Input")
+        self.inputs[0].link_limit = 4095
+
+        self.outputs.new('DefaultSocketType', "Output")
+        self.outputs.new("DependanceSocketType", "Dependant")
+
+
+# ============ End of super classes ============
+
+
+class InputNode(LogicNode):
     """InAIte input node"""
     bl_label = "Input"
 
@@ -69,7 +105,7 @@ class InputNode(InAIteNode):
         layout.prop(self, "Input")
         # layout.prop(self, "fillOutput")
 
-    def get_settings(self, node):
+    def getSettings(self, node):
         node.settings["Input"] = self.Input
 
 
@@ -83,7 +119,7 @@ def update_properties(self, context):
         self.LowerZero = self.LowerOne
 
 
-class GraphNode(InAIteNode):
+class GraphNode(LogicNode):
     """InAIte graph node"""
     bl_label = "Graph"
 
@@ -110,7 +146,7 @@ class GraphNode(InAIteNode):
             layout.prop(self, "UpperOne")
             layout.prop(self, "UpperZero")
 
-    def get_settings(self, node):
+    def getSettings(self, node):
         node.settings["CurveType"] = self.CurveType
         node.settings["LowerZero"] = self.LowerZero
         node.settings["LowerOne"] = self.LowerOne
@@ -120,7 +156,7 @@ class GraphNode(InAIteNode):
         node.settings["RBFTenPP"] = self.RBFTenPP
 
 
-class AndNode(InAIteNode):
+class AndNode(LogicNode):
     """InAIte and node"""
     bl_label = "And"
 
@@ -129,11 +165,11 @@ class AndNode(InAIteNode):
     def draw_buttons(self, context, layout):
         layout.prop(self, "SingleOutput")
 
-    def get_settings(self, node):
+    def getSettings(self, node):
         node.settings["SingleOutput"] = self.SingleOutput
 
 
-class OrNode(InAIteNode):
+class OrNode(LogicNode):
     """InAIte or node"""
     bl_label = "Or"
 
@@ -142,11 +178,11 @@ class OrNode(InAIteNode):
     def draw_buttons(self, context, layout):
         layout.prop(self, "SingleOutput")
 
-    def get_settings(self, node):
+    def getSettings(self, node):
         node.settings["SingleOutput"] = self.SingleOutput
 
 
-class QueryTagNode(InAIteNode):
+class QueryTagNode(LogicNode):
     """InAIte Query Tag node"""
     bl_label = "Query Tag"
 
@@ -155,11 +191,11 @@ class QueryTagNode(InAIteNode):
     def draw_buttons(self, context, layout):
         layout.prop(self, "Tag")
 
-    def get_settings(self, node):
+    def getSettings(self, node):
         node.settings["Tag"] = self.Tag
 
 
-class SetTagNode(InAIteNode):
+class SetTagNode(LogicNode):
     """InAIte Set Tag node"""
     bl_label = "Set Tag"
 
@@ -177,14 +213,14 @@ class SetTagNode(InAIteNode):
             layout.prop(self, "Threshold")
         layout.prop(self, "Action")
 
-    def get_settings(self, node):
+    def getSettings(self, node):
         node.settings["Tag"] = self.Tag
         node.settings["UseThreshold"] = self.UseThreshold
         node.settings["Threshold"] = self.Threshold
         node.settings["Action"] = self.Action
 
 
-class VariableNode(InAIteNode):
+class VariableNode(LogicNode):
     """InAIte Variable node"""
     bl_label = "Variable"
 
@@ -193,11 +229,11 @@ class VariableNode(InAIteNode):
     def draw_buttons(self, context, layout):
         layout.prop(self, "Variable")
 
-    def get_settings(self, node):
+    def getSettings(self, node):
         node.settings["Variable"] = self.Variable
 
 
-class MapNode(InAIteNode):
+class MapNode(LogicNode):
     """InAIte Map node"""
     bl_label = "Map"
 
@@ -212,14 +248,14 @@ class MapNode(InAIteNode):
         layout.prop(self, "LowerOutput")
         layout.prop(self, "UpperOutput")
 
-    def get_settings(self, node):
+    def getSettings(self, node):
         node.settings["LowerInput"] = self.LowerInput
         node.settings["UpperInput"] = self.UpperInput
         node.settings["LowerOutput"] = self.LowerOutput
         node.settings["UpperOutput"] = self.UpperOutput
 
 
-class OutputNode(InAIteNode):
+class OutputNode(LogicNode):
     """InAIte Output node"""
     bl_label = "Output"
 
@@ -239,12 +275,12 @@ class OutputNode(InAIteNode):
         layout.prop(self, "Output")
         layout.prop(self, "MultiInputType")
 
-    def get_settings(self, node):
+    def getSettings(self, node):
         node.settings["Output"] = self.Output
         node.settings["MultiInputType"] = self.MultiInputType
 
 
-class EventNode(InAIteNode):
+class EventNode(LogicNode):
     """InAIte Event node"""
     bl_label = "Event"
 
@@ -253,11 +289,11 @@ class EventNode(InAIteNode):
     def draw_buttons(self, context, layout):
         layout.prop(self, "EventName")
 
-    def get_settings(self, node):
+    def getSettings(self, node):
         node.settings["EventName"] = self.EventName
 
 
-class PythonNode(InAIteNode):
+class PythonNode(LogicNode):
     """InAIte Python node"""
     bl_label = "Python"
 
@@ -267,11 +303,11 @@ class PythonNode(InAIteNode):
     def draw_buttons(self, context, layout):
         layout.prop(self, "Expression")
 
-    def get_settings(self, node):
+    def getSettings(self, node):
         node.settings["Expression"] = self.Expression
 
 
-class PrintNode(InAIteNode):
+class PrintNode(LogicNode):
     """InAIte Print Node"""
     bl_label = "Print"
 
@@ -281,8 +317,106 @@ class PrintNode(InAIteNode):
     def draw_buttons(self, context, layout):
         layout.prop(self, "Label")
 
-    def get_settings(self, node):
+    def getSettings(self, node):
         node.settings["Label"] = self.Label
+
+
+# ============ Start of state nodes ============
+
+
+class StateNode(InAIteNode):
+    bl_label = 'State super class'
+
+    def init(self, context):
+        self.inputs.new("StateSocketType", "From")
+        self.inputs["From"].link_limit = 4095
+        self.inputs.new("DefaultSocketType", "Value")
+        self.inputs["Value"].link_limit = 4095
+        self.inputs.new("DependanceSocketType", "Dependant")
+        self.inputs["Dependant"].link_limit = 4095
+
+        self.outputs.new("StateSocketType", "To")
+        self.outputs["To"].link_limit = 4095
+
+
+# ====== End of Super class ======
+
+
+class StartState(StateNode):
+    """InAIte Start State"""
+    bl_label = "Start"
+
+    def init(self, context):
+        self.inputs.new("DependanceSocketType", "Dependant")
+        self.inputs["Dependant"].link_limit = 4095
+
+        self.outputs.new("StateSocketType", "To")
+        self.outputs["To"].link_limit = 4095
+
+    def getSettings(self, item):
+        return
+
+
+class ActionState(StateNode):
+    """InAIte Action State"""
+    bl_label = "Action"
+
+    stateLength = IntProperty(default=1)
+
+    def init(self, context):
+        StateNode.init(self, context)
+
+    def getSettings(self, item):
+        val = self.inputs['Value']
+        item.settings["ValueFilter"] = val.filterProperty
+        item.settings["ValueDefault"] = val.defaultValueProperty
+        item.length = self.stateLength
+
+    def draw_buttons(self, context, layout):
+        layout.prop(self, "stateLength")
+
+
+"""class SwitchState(StateNode):
+    bl_label = "Switch"
+
+    def init(self, context):
+        self.outputs.new("StateSocketType", "Option 1")
+
+        self.inputs.new("StateSocketType", "From")
+        self.inputs.new("DependanceSocketType", "Dependant")
+        self.inputs.new("DefaultSocketType", "Option 1")
+
+    def update(self):
+        num = 1
+        cont = True
+        while "Option " + str(num) in self.inputs:
+            if not len(self.inputs["Option " + str(num)].links) > 0:
+                if not cont:
+                    self.inputs.remove(self.inputs["Option " + str(num)])
+                    self.outputs.remove(self.inputs["Option " + str(num)])
+                cont = False
+            num += 1
+        if cont and num != 1:
+            self.inputs.new("DefaultSocketType", "Option " + str(num))
+            self.outputs.new("StateSocketType", "Option " + str(num))"""
+
+
+class NoteNode(Node):
+    """For keeping the graph well organised"""
+    bl_label = 'Note Node'
+
+    noteText = StringProperty(default="Enter text here")
+
+    def draw_buttons(self, context, layout):
+        layout.label(self.noteText)
+
+    def draw_buttons_ext(self, context, layout):
+        layout.prop(self, "noteText")
+
+    @classmethod
+    def poll(cls, ntree):
+        return ntree.bl_idname == 'InAIteTreeType'
+
 
 # # # Node Categories # # #
 # Node categories are a python system for automatically
@@ -310,6 +444,10 @@ node_categories = [
         NodeItem("MapNode"),
         NodeItem("OutputNode")
         ]),
+    MyNodeCategory("STATE", "State", items=[
+        NodeItem("StartState"),
+        NodeItem("ActionState")
+        ]),
     MyNodeCategory("OTHER", "Other", items=[
         NodeItem("QueryTagNode"),
         NodeItem("SetTagNode"),
@@ -322,15 +460,19 @@ node_categories = [
         ]),
     MyNodeCategory("LAYOUT", "Layout", items=[
         NodeItem("NodeFrame"),
-        NodeItem("NodeReroute")
-    ])
+        NodeItem("NodeReroute"),
+        NodeItem("NoteNode")
+        ])
     ]
 
 
 def register():
     bpy.utils.register_class(InAIteTree)
     bpy.utils.register_class(DefaultSocket)
-    bpy.utils.register_class(InAIteNode)
+    bpy.utils.register_class(StateSocket)
+    bpy.utils.register_class(DependanceSocket)
+    bpy.utils.register_class(LogicNode)
+    bpy.utils.register_class(StateNode)
 
     bpy.utils.register_class(InputNode)
     bpy.utils.register_class(GraphNode)
@@ -345,6 +487,11 @@ def register():
     bpy.utils.register_class(PythonNode)
     bpy.utils.register_class(PrintNode)
 
+    bpy.utils.register_class(StartState)
+    bpy.utils.register_class(ActionState)
+
+    bpy.utils.register_class(NoteNode)
+
     nodeitems_utils.register_node_categories("InAIte_NODES", node_categories)
 
 
@@ -353,7 +500,10 @@ def unregister():
 
     bpy.utils.unregister_class(InAIteTree)
     bpy.utils.unregister_class(DefaultSocket)
-    bpy.utils.unregister_class(InAIteNode)
+    bpy.utils.unregister_class(StateSocket)
+    bpy.utils.unregister_class(DependanceSocket)
+    bpy.utils.unregister_class(LogicNode)
+    bpy.utils.unregister_class(StateNode)
 
     bpy.utils.unregister_class(InputNode)
     bpy.utils.unregister_class(GraphNode)
@@ -368,6 +518,10 @@ def unregister():
     bpy.utils.unregister_class(PythonNode)
     bpy.utils.unregister_class(PrintNode)
 
+    bpy.utils.unregister_class(StartState)
+    bpy.utils.unregister_class(ActionState)
+
+    bpy.utils.unregister_class(NoteNode)
 
 if __name__ == "__main__":
     register()

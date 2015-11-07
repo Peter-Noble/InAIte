@@ -5,7 +5,6 @@ sce = bpy.context.scene
 O = sce.objects
 
 import sys
-from .iai_compileBrain import compileagent
 
 from . import iai_channels as chan
 wr = chan.Wrapper
@@ -43,17 +42,14 @@ class Simulation():
         group = sce.iai_agents.coll[name].group
         groupEntry = sce.iai_groups.coll[group-1]
         ty = sce.iai_groups.coll[group-1].type
-        for a in bpy.data.node_groups:
-            if a.name == ty:
-                if ty not in self.compbrains:
-                    cb = compileagent(a, self)
-                    self.compbrains[ty] = cb
-                ag = Agent(name, self.compbrains[ty], groupEntry.momentum)
-                self.agents[name] = ag
+        if ty in bpy.data.node_groups:
+            ag = Agent(name, bpy.data.node_groups[ty], self)
+            self.agents[name] = ag
+        else:
+            print("No such brain type:" + ty)
 
     def createAgents(self, agents):
         """Set up all the agents at the beginning of the simulation"""
-        # TODO this really needs a better way of searching throught the brains
         for ag in agents:
             self.newagent(ag.name)
 
@@ -70,6 +66,8 @@ class Simulation():
         # straight after the agent is evaluated.
         for a in self.agents.values():
             a.step()
+        for a in self.agents.values():
+            a.apply()
         for chan in self.lvars.values():
             chan.newframe()
 
@@ -78,6 +76,8 @@ class Simulation():
         if self.framelast+1 == sce.frame_current:
             self.framelast = sce.frame_current
             self.step(scene)
+        if bpy.context.active_object.name in self.agents:
+            self.agents[bpy.context.active_object.name].highLight()
 
     def startFrameHandler(self):
         """Add self.frameChangeHandler to the Blender event handlers"""

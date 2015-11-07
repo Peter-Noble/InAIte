@@ -9,7 +9,12 @@ import bpy
 
 
 """
-Instructions of creating new neurons need redoing
+class Logic{NAME}(Neuron):
+    def core(self, inps, settings):
+        :param inps: list of form [ImpulseContainer |
+                                   dict of form {str: float | int}, ]
+        :param settings: dict of form {str: str | int | float, }
+        :rtype: int | dict of form {str: float | int}
 """
 
 
@@ -19,7 +24,9 @@ class LogicINPUT(Neuron):
     def core(self, inps, settings):
         lvars = copy.copy(self.brain.lvars)
         lvars["math"] = math
-        return eval(settings["Input"], lvars)
+        lvars["inps"] = inps
+        result = eval(settings["Input"], lvars)
+        return result
 
 
 class LogicGRAPH(Neuron):
@@ -221,7 +228,7 @@ class LogicOUTPUT(Neuron):
                 out = SmSquared / Sm
             print("out", out)
         self.brain.outvars[settings["Output"]] = out
-        # TODO doesn't output anything
+        return out
 
 
 class LogicEVENT(Neuron):
@@ -240,7 +247,7 @@ class LogicEVENT(Neuron):
                         result *= 0
                 if e.category == "Volume" or e.category == "Time+Volume":
                     if result:
-                        pt = bpy.data.objects[self.brain.currentuser].location
+                        pt = bpy.data.objects[self.brain.userid].location
                         l = bpy.data.objects[e.volume].location
                         d = bpy.data.objects[e.volume].dimensions
 
@@ -276,7 +283,7 @@ class LogicPRINT(Neuron):
 
     def core(self, inps, settings):
         selected = [o.name for o in bpy.context.selected_objects]
-        if self.brain.currentuser in selected:
+        if self.brain.userid in selected:
             for into in inps:
                 for i in into:
                     print(settings["Label"], ">>", i.key, i.val)
@@ -300,61 +307,15 @@ logictypes = OrderedDict([
 ])
 
 
-"""
-State trees need redoing
-"""
-
-
 class StateSTART(State):
     """Points to the first state for the agent to be in"""
 
-    def __init__(self, tree):
-        State.__init__(self, tree)
-        self.start = True
 
-    def query(self):
-        return 0
-
-
-class StateSTD(State):
+class StateAction(State):
     """The normal state in a state machine"""
 
-    def __init__(self, tree):
-        State.__init__(self, tree)
-
-    def query(self):
-        if self.settings["Trigger"] in self.tree.brain.tags:
-            return self.tree.brain.tags[self.settings["Trigger"]]
-        return 0
-
-
-class StateTRANSITION(State):
-    """This node queries the node its connected to and returns those results"""
-
-    def __init__(self, tree):
-        State.__init__(self, tree)
-
-    def query(self):
-        return self.connected[0].query()
-
-
-class StateINTERRUPT(State):
-    """Jump from anywhere to this node if a condition is met"""
-
-    def __init__(self, tree):
-        State.__init__(self, tree)
-        self.interrupt = True
-
-    def query(self):
-        if self.settings["Trigger"] in self.tree.brain.tags:
-            val = self.tree.brain.tags[self.settings["Trigger"]]
-            if val > self.settings["Theshold"]:
-                return val
-        return 0
 
 statetypes = OrderedDict([
-    ("START", StateSTART),
-    ("STD", StateSTD),
-    ("TRANSITION", StateTRANSITION),
-    ("INTERRUPT", StateINTERRUPT)
+    ("StartState", StateSTART),
+    ("ActionState", StateAction)
 ])

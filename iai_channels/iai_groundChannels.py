@@ -54,7 +54,7 @@ class Ground(Mc):
             self.store["location"] = loc
             self.store["normal"] = norm
             self.store["index"] = ind
-            self.store["distance"] = dist * direc
+            self.store["distance"] = dist * direc  # direc is +/-1
 
         self.calced = True
 

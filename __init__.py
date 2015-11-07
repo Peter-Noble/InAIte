@@ -25,7 +25,6 @@ class SCENE_UL_group(UIList):
                   active_propname):
         if self.layout_type in {'DEFAULT', 'COMPACT'}:
             layout.label(text=str(item.name))
-            layout.prop(item, "momentum")
             layout.prop(item, "type", text="")
             # layout.prop_search(item, "type", bpy.data, "actions", text="")
             # this draws each row in the list. Each line is a widget
