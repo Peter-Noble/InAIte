@@ -43,10 +43,10 @@ class LogicGRAPH(Neuron):
                 return 0
             elif value < lo:
                 return (value - lz) / (lo - lz)
-            elif value < uo:
+            elif value <= uo:
                 return 1
             elif value < uz:
-                return (value - uo) / (uz - uo)
+                return (uz - value) / (uz - uo)
             else:
                 return 0
 

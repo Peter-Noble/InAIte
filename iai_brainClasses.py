@@ -1,23 +1,23 @@
 from . import iai_channels as chan
 import random
 import functools
+
 import bpy
+sce = bpy.context.scene
+
 import mathutils
 
-sce = bpy.context.scene
+from .iai_debuggingMode import debugMode
 
 
 class Impulse():
     def __init__(self, tup):
+        if debugMode:
+            assert isinstance(tup[0], str), "Impulse key should be type str"
+            assert isinstance(tup[1], int) or isinstance(tup[1], float), \
+                "Impulse value should be type int or float"
         self.key = tup[0]
         self.val = tup[1]
-
-    """def __getitem__(self, key):
-        if key == 0:
-            return self.key
-        if key == 1:
-            return self.val"""
-    # I don't think this is needed... but it might be
 
 
 class ImpulseContainer():
@@ -31,17 +31,11 @@ class ImpulseContainer():
                 print("NOT IMPULSE IN CONTAINER")
             return self.cont[key]
 
-    """def __setitem__(self, key, value):
-        self.cont[key] = value
-    def __delitem__(self, key):
-        del self.cont[key]"""
-    # This shouldn't be allowed but commented because I'm not sure if this
-    # is used anywhere
-
     def __iter__(self):
         return iter([Impulse(x) for x in self.cont.items()])
         # This gets calculated every time the input is looked at
         # Better to calculate in __init__?
+        # Do iter objects need making each time
 
     def __contains__(self, item):
         return item in self.cont
@@ -52,25 +46,27 @@ class ImpulseContainer():
     def values(self):
         return self.cont.values()
 
+    def __repr__(self):
+        return "Impusle container(" + str(self.cont) + ")"
+
 
 class Neuron():
     """The representation of the nodes. Not to be used on own"""
     def __init__(self, brain, bpyNode):
-        self.brain = brain
-        self.neurons = self.brain.neurons
-        self.inputs = []
-        # self.parent = None
-        self.result = None
-        self.resultLog = [(0, 0, 0), (0, 0, 0)]
-        # self.active = True # Don't think this is used???
+        self.brain = brain  # type: Brain
+        self.neurons = self.brain.neurons  # type: List[Neuron]
+        self.inputs = []  # type: List[str] - strings are names of neurons
+        self.result = None  # type: None | ImpulseContainer - Cache for current
+        self.resultLog = [(0, 0, 0), (0, 0, 0)]  # type: List[(int, int, int)]
         self.fillOutput = bpy.props.BoolProperty(default=True)
-        self.bpyNode = bpyNode
-        self.settings = {}
-        self.dependantOn = []
+        self.bpyNode = bpyNode  # type: iai_bpyNodes.LogicNode
+        self.settings = {}  # type: Dict[str, bpy.props.*]
+        self.dependantOn = []  # type: List[str] - strings are names of neurons
 
     def evaluate(self):
         """Called by any neurons that take this neuron as an input"""
         if self.result:
+            # Return a cached version of the answer if possible
             return self.result
         noDeps = len(self.dependantOn) == 0
         dep = True in [self.neurons[x].isCurrent for x in self.dependantOn]
@@ -84,13 +80,12 @@ class Neuron():
                 input in not a dictionary then it is made into one"""
                 if got is not None:
                     inps.append(got)
-            # print("E", self.settings, inps)
             im = self.core(inps, self.settings)
             if isinstance(im, dict):
                 output = ImpulseContainer(im)
             elif isinstance(im, ImpulseContainer):
-                # TODO this shouldn't be allowed
-                print("iai_brainClasses.py - This should not be allowed")
+                if debugMode:
+                    print("iai_brainClasses.py - This should not be allowed")
                 output = im
             elif im is None:
                 output = im
@@ -156,8 +151,8 @@ class State():
         self.neurons = self.brain.neurons
         self.outputs = []
         self.valueInputs = []  # Left empty by start state
-        self.values = []  # The results from evaluating the valueInputs
         self.finalValue = 1.0
+        self.finalValueCalcd = False
         self.settings = {}
         self.isCurrent = False
 
@@ -169,12 +164,14 @@ class State():
 
     def query(self):
         """If this state is a valid next move return float > 0"""
+        if not self.finalValueCalcd:
+            self.evaluate()
+        # print("query", self.name, self.finalValue)
         return self.finalValue
 
     def moveTo(self):
-        # print("moveto called")
         """Called when the current state moves to this node"""
-        print("Moving to a new state:", self.name)
+        # print("Moving to a new state:", self.name)
         self.currentFrame = 0
         self.isCurrent = True
         """self.currentFrame = 0
@@ -200,27 +197,32 @@ class State():
 
     def evaluate(self):
         """Called while all the neurons are being evaluated"""
-        self.values = []
-        num = 0
+        if self.finalValueCalcd:
+            return
+        self.finalValueCalcd = True
+        if len(self.valueInputs) == 0:
+            self.finalValue = self.settings["ValueDefault"]
+            return
+        values = []
         for inp in self.valueInputs:
-            self.values.append(self.neurons[inp].evaluate())
-        if self.settings["ValueFilter"] == "AVERAGE":
-            total = 0
-            num = 0
-        else:
-            vals = []
-        for v in self.values:
-            if v:
+            values.append(self.neurons[inp].evaluate())
+
+        total = 0
+        num = 0
+        vals = []
+
+        for v in values:
+            if v is not None:
                 if self.settings["ValueFilter"] == "AVERAGE":
                     for i in v.values():
                         total += i
                         num += 1
-                else:
-                    vals += v.values()
+                vals += v.values()
         if num == 0:
             num = 1
-
-        if self.settings["ValueFilter"] == "AVERAGE":
+        if len(vals) == 0:
+            result = 0
+        elif self.settings["ValueFilter"] == "AVERAGE":
             result = total / num
         elif self.settings["ValueFilter"] == "MAX":
             result = max(vals)
@@ -245,21 +247,22 @@ class State():
         options = []
         for con in self.outputs:
             val = self.neurons[con].query()
-            if val:
-                print(con, val)
+            # print(con, val)
+            if val is not None:
                 options.append((con, val))
         if len(options) > 0:
             self.resultLog.append((0.15, 0.25, 1.0))
             if len(options) == 1:
                 return True, options[0][0]
-            elif len(options) > 0:
+            else:
                 return True, sorted(options, key=lambda v: v[1])[-1][0]
+                # TODO this isn't a very efficient way of finding the largest
         self.resultLog.append((0.0, 0.0, 1.0))
 
         return False, None
 
     def newFrame(self):
-        pass
+        self.finalValueCalcd = False
 
     def highLight(self, frame):
         pass
@@ -305,3 +308,7 @@ class Brain():
             self.neurons[self.currentState].isCurrent = True
             if new:
                 self.neurons[nextState].moveTo()
+
+    def hightLight(self, frame):
+        for n in self.neurons.values():
+            n.highLight(frame)

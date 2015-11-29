@@ -223,14 +223,13 @@ class Channel:
                     if (s < 1) or (t < 1):
                         cert = 0
                     else:
-                        # This equation results in overflow errors
-                        # cert = math.log(2+abs(c)+adjust)*(math.e**(-2**(abs(c)+adjust)**2))
                         if s > 32:
                             c = 1
                         else:
                             c = s / 32
                         cert = (1 - ((-(c**3)/3 + (c**2)/2) * 6))**2
-                    self.storePrediction[emitterid] = (changez, changex, 1-(dist/val), cert)
+                    self.storePrediction[emitterid] = (changez, changex,
+                                                       1-(dist/val), cert)
                     # (z rot, x rot, dist proportion, time until prediction)
 
     @property

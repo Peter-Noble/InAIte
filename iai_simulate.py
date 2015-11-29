@@ -26,12 +26,14 @@ class Simulation():
         World = chan.World(self)
         Crowd = chan.Crowd(self)
         Ground = chan.Ground(self)
+        Formation = chan.Formation(self)
         self.lvars = {"Noise": wr(Noise),
                       "Sound": wr(Sound),
                       "State": wr(State),
                       "World": wr(World),
                       "Crowd": wr(Crowd),
-                      "Ground": wr(Ground)}
+                      "Ground": wr(Ground),
+                      "Formation": wr(Formation)}
 
     def actions(self):
         """Set up the actions"""
@@ -76,8 +78,9 @@ class Simulation():
         if self.framelast+1 == sce.frame_current:
             self.framelast = sce.frame_current
             self.step(scene)
-        if bpy.context.active_object.name in self.agents:
-            self.agents[bpy.context.active_object.name].highLight()
+        if self.framelast >= sce.frame_current:
+            if bpy.context.active_object.name in self.agents:
+                self.agents[bpy.context.active_object.name].highLight()
 
     def startFrameHandler(self):
         """Add self.frameChangeHandler to the Blender event handlers"""

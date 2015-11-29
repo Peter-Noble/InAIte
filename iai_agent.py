@@ -5,6 +5,7 @@ import copy
 import math
 
 from .iai_compileBrain import compileBrain
+from .iai_debuggingMode import debugMode
 
 sce = bpy.context.scene
 objs = bpy.data.objects
@@ -13,7 +14,8 @@ objs = bpy.data.objects
 class Agent:
     """Represents each of the agents in the scene"""
     def __init__(self, blenderid, nodeGroup, sim):
-        print("Blender id", blenderid)
+        if debugMode:
+            print("Blender id", blenderid)
         self.id = blenderid
         self.brain = compileBrain(nodeGroup, sim, blenderid)
         self.sim = sim
@@ -61,11 +63,12 @@ class Agent:
     def step(self):
         self.brain.execute()
         if objs[self.id].select:
-            print("ID: ", self.id, "Tags: ", self.brain.tags,
-                  "outvars: ", self.brain.outvars)
-            for n in self.brain.neurons.values():
-                n.highLight(bpy.context.scene.frame_current)
+            if debugMode:
+                print("ID: ", self.id, "Tags: ", self.brain.tags,
+                      "outvars: ", self.brain.outvars)
             # TODO show this in the UI
+        if objs[self.id] == bpy.context.active_object:
+            self.brain.hightLight(bpy.context.scene.frame_current)
 
         self.rx = self.brain.outvars["rx"] if self.brain.outvars["rx"] else 0
         self.ry = self.brain.outvars["ry"] if self.brain.outvars["ry"] else 0

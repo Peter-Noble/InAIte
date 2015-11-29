@@ -376,31 +376,6 @@ class ActionState(StateNode):
         layout.prop(self, "stateLength")
 
 
-"""class SwitchState(StateNode):
-    bl_label = "Switch"
-
-    def init(self, context):
-        self.outputs.new("StateSocketType", "Option 1")
-
-        self.inputs.new("StateSocketType", "From")
-        self.inputs.new("DependanceSocketType", "Dependant")
-        self.inputs.new("DefaultSocketType", "Option 1")
-
-    def update(self):
-        num = 1
-        cont = True
-        while "Option " + str(num) in self.inputs:
-            if not len(self.inputs["Option " + str(num)].links) > 0:
-                if not cont:
-                    self.inputs.remove(self.inputs["Option " + str(num)])
-                    self.outputs.remove(self.inputs["Option " + str(num)])
-                cont = False
-            num += 1
-        if cont and num != 1:
-            self.inputs.new("DefaultSocketType", "Option " + str(num))
-            self.outputs.new("StateSocketType", "Option " + str(num))"""
-
-
 class NoteNode(Node):
     """For keeping the graph well organised"""
     bl_label = 'Note Node'
@@ -418,17 +393,10 @@ class NoteNode(Node):
         return ntree.bl_idname == 'InAIteTreeType'
 
 
-# # # Node Categories # # #
-# Node categories are a python system for automatically
-# extending the Add menu, toolbar panels and search operator.
-# For more examples see release/scripts/startup/nodeitems_builtins.py
-
 import nodeitems_utils
 from nodeitems_utils import NodeCategory, NodeItem
 
 
-# our own base class with an appropriate poll function,
-# so the categories only show up in our own tree type
 class MyNodeCategory(NodeCategory):
     @classmethod
     def poll(cls, context):
