@@ -52,7 +52,6 @@ screen shots
 
 # Blender files #
 #################
-*.blend
 *.blend1
 *.cys
 *.png
@@ -69,4 +68,3 @@ Error message/
 *.png
 *.psd
 *.bvh
-*.blend
