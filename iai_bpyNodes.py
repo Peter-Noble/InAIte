@@ -362,6 +362,7 @@ class ActionState(StateNode):
     bl_label = "Action"
 
     stateLength = IntProperty(default=1)
+    cycleState = BoolProperty(default=False)
 
     def init(self, context):
         StateNode.init(self, context)
@@ -371,9 +372,11 @@ class ActionState(StateNode):
         item.settings["ValueFilter"] = val.filterProperty
         item.settings["ValueDefault"] = val.defaultValueProperty
         item.length = self.stateLength
+        item.cycleState = self.cycleState
 
     def draw_buttons(self, context, layout):
         layout.prop(self, "stateLength")
+        layout.prop(self, "cycleState")
 
 
 class NoteNode(Node):

@@ -49,7 +49,7 @@ def compileBrain(nodeGroup, sim, userid):
             item.outputs = getOutputs(node.outputs["To"])
             print(node.name, "outputs", item.outputs)
             if node.bl_idname == "StartState":
-                result.currentState = node.name
+                result.setStartState(node.name)
             else:
                 item.valueInputs = getInputs(node.inputs["Value"])
                 if len(item.valueInputs) != 0:

@@ -146,6 +146,7 @@ class Neuron():
 class State():
     """The basic element of the state machine. Abstract class"""
     def __init__(self, brain, bpyNode, name):
+        """A lot of the fields are modified by the compileBrain function"""
         self.name = name
         self.brain = brain
         self.neurons = self.brain.neurons
@@ -157,10 +158,11 @@ class State():
         self.isCurrent = False
 
         self.length = 0
+        self.cycleState = False
         self.currentFrame = 0
 
         self.bpyNode = bpyNode
-        self.resultLog = [(0, 0, 0), (0, 0, 0)]
+        self.resultLog = {0:(0, 0, 0), 1:(0, 0, 0)}
 
     def query(self):
         """If this state is a valid next move return float > 0"""
@@ -241,8 +243,19 @@ class State():
         """Check to see if the current state is still playing an animation"""
         # print("currentFrame", self.currentFrame, "length", self.length)
         # print("Value compared", self.length - 2 - self.settings["Fade out"])
+
+        # The proportion of the way through the state
+        if self.length == 0:
+            complete = 1
+        else:
+            complete = self.currentFrame/self.length
+            complete = 0.5 + complete/2
+        self.resultLog[sce.frame_current] = ((0.15, 0.4, complete))
+
         if self.currentFrame < self.length - 1:
             return False, self.name
+
+        # ==== Will stop here is this state hasn't reached its end ====
 
         options = []
         for con in self.outputs:
@@ -250,14 +263,20 @@ class State():
             # print(con, val)
             if val is not None:
                 options.append((con, val))
+
+        # If the cycleState button is checked then add a contection back to
+        #    this state again.
+        if self.cycleState and self.name not in self.outputs:
+            val = self.neurons[self.name].query()
+            # print(con, val)
+            if val is not None:
+                options.append((self.name, val))
+
         if len(options) > 0:
-            self.resultLog.append((0.15, 0.25, 1.0))
             if len(options) == 1:
                 return True, options[0][0]
             else:
-                return True, sorted(options, key=lambda v: v[1])[-1][0]
-                # TODO this isn't a very efficient way of finding the largest
-        self.resultLog.append((0.0, 0.0, 1.0))
+                return True, max(options, key=lambda v: v[1])[0]
 
         return False, None
 
@@ -265,7 +284,17 @@ class State():
         self.finalValueCalcd = False
 
     def highLight(self, frame):
-        pass
+        if frame in self.resultLog:
+            hue, sat, val = self.resultLog[frame]
+        else:
+            hue = 0.0
+            sat = 0.0
+            val = 1.0
+        self.bpyNode.use_custom_color = True
+        c = mathutils.Color()
+        c.hsv = hue, sat, val
+        self.bpyNode.color = c
+        self.bpyNode.keyframe_insert("color")
 
 
 class Brain():
@@ -273,16 +302,24 @@ class Brain():
     def __init__(self, sim, userid):
         self.userid = userid
         self.sim = sim
-        self.neurons = {}
-        self.outputs = []
         self.agvars = {}
         self.lvars = self.sim.lvars
         self.outvars = {}
         self.tags = {}
         self.isActiveSelection = False
 
-        self.states = []
         self.currentState = None
+        self.startState = None
+
+        # set in compileBrian
+        self.outputs = []
+        self.neurons = {}
+        self.states = []
+
+    def setStartState(self, stateNode):
+        """Used by compileBrian"""
+        self.currentState = stateNode
+        self.startState = stateNode
 
     def reset(self):
         self.outvars = {"rx": 0, "ry": 0, "rz": 0,
@@ -304,11 +341,14 @@ class Brain():
         if self.currentState:
             new, nextState = self.neurons[self.currentState].evaluateState()
             self.neurons[self.currentState].isCurrent = False
+            if nextState is None:
+                nextState = self.startState
             self.currentState = nextState
             self.neurons[self.currentState].isCurrent = True
             if new:
                 self.neurons[nextState].moveTo()
 
     def hightLight(self, frame):
+        """This will be called for the agent that is the active selection"""
         for n in self.neurons.values():
             n.highLight(frame)
