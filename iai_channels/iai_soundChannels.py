@@ -6,7 +6,6 @@ Vector = mathutils.Vector
 if __name__ != "__main__":
     import bpy
 
-    O = bpy.context.scene.objects
 else:
     import unittest
 
@@ -30,7 +29,7 @@ else:
 
     class Test(unittest.TestCase):
         def setUp(self):
-            global O
+            O = bpy.context.scene.objects
             # Impersonate bpy.context.scene.objects
             # These are the objects that can be used to emit and hear sounds
             O = {"OB1": FakeObject([0, 0, 0], [0, 0, 0]),
@@ -143,6 +142,8 @@ class Channel:
 
     def calculate(self):
         """Called the first time an agent uses this frequency"""
+        O = bpy.context.scene.objects
+        
         ag = O[self.userid]
         for emitterid, val in self.emitters.items():
             if emitterid != self.userid:

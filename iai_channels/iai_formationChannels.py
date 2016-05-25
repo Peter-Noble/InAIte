@@ -7,7 +7,6 @@ import math
 from .libs.ins_clustering import clusterMatch
 
 import bpy
-objs = bpy.data.objects
 
 
 class Formation(Mc):

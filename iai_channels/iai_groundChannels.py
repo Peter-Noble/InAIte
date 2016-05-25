@@ -1,5 +1,4 @@
 import bpy
-sce = bpy.context.scene
 
 from math import *
 from mathutils import *
@@ -30,11 +29,11 @@ class Ground(Mc):
     def calcground(self):
         """Called the first time each agent uses the Ground channel"""
         results = []
-        s = sce.objects[self.userid]
+        s = bpy.context.scene.objects[self.userid]
         for ag in self.sim.agents.values():
             if "Ground" in ag.access["tags"]:
                 # TODO record this when the tags are set
-                gnd = sce.objects[ag.id]
+                gnd = bpy.context.scene.objects[ag.id]
                 if ag.id not in self.groundTrees:
                     r = gnd.rotation_euler
                     if not (r[0] or r[1] or r[2]):

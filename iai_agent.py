@@ -7,9 +7,6 @@ import math
 from .iai_compileBrain import compileBrain
 from .iai_debuggingMode import debugMode
 
-sce = bpy.context.scene
-objs = bpy.data.objects
-
 
 class Agent:
     """Represents each of the agents in the scene"""
@@ -27,6 +24,8 @@ class Agent:
         self.access = copy.deepcopy(self.external)
         self.agvars = {"None": None}
         "agent variables. Don't access from other agents"
+
+        objs = bpy.data.objects
 
         """ar - absolute rot, r - change rot by, rs - rot speed"""
         self.arx = objs[blenderid].rotation_euler[0]
@@ -55,12 +54,15 @@ class Agent:
         self.sz = 0
 
         """Clear out the nla"""
+        objs = bpy.data.objects
 
         objs[blenderid].animation_data_clear()
         objs[blenderid].keyframe_insert(data_path="location", frame=1)
         objs[blenderid].keyframe_insert(data_path="rotation_euler", frame=1)
 
     def step(self):
+        objs = bpy.data.objects
+
         self.brain.execute()
         if objs[self.id].select:
             if debugMode:
@@ -111,6 +113,7 @@ class Agent:
 
     def apply(self):
         """Called in single thread after all agent.step() calls are done"""
+        objs = bpy.data.objects
 
         if objs[self.id].animation_data:
             objs[self.id].animation_data.action_extrapolation = 'HOLD_FORWARD'
@@ -125,12 +128,12 @@ class Agent:
 
         """Set the keyframes"""
         objs[self.id].keyframe_insert(data_path="rotation_euler",
-                                      frame=sce.frame_current)
+                                      frame=bpy.context.scene.frame_current)
         objs[self.id].keyframe_insert(data_path="location",
-                                      frame=sce.frame_current)
+                                      frame=bpy.context.scene.frame_current)
 
         self.access = copy.deepcopy(self.external)
 
     def highLight(self):
         for n in self.brain.neurons.values():
-            n.highLight(sce.frame_current)
+            n.highLight(bpy.context.scene.frame_current)

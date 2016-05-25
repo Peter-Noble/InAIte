@@ -1,9 +1,6 @@
 import bpy
 from collections import OrderedDict
 
-sce = bpy.context.scene
-O = sce.objects
-
 import sys
 
 from . import iai_channels as chan
@@ -41,9 +38,9 @@ class Simulation():
 
     def newagent(self, name):
         """Set up an agent"""
-        group = sce.iai_agents.coll[name].group
-        groupEntry = sce.iai_groups.coll[group-1]
-        ty = sce.iai_groups.coll[group-1].type
+        group = bpy.context.scene.iai_agents.coll[name].group
+        groupEntry = bpy.context.scene.iai_groups.coll[group-1]
+        ty = bpy.context.scene.iai_groups.coll[group-1].type
         if ty in bpy.data.node_groups:
             ag = Agent(name, bpy.data.node_groups[ty], self)
             self.agents[name] = ag
@@ -57,7 +54,7 @@ class Simulation():
 
     def step(self, scene):
         """Called when the next frame is moved to"""
-        print("NEWFRAME", sce.frame_current)
+        print("NEWFRAME", bpy.context.scene.frame_current)
         for agent in self.agents.values():
             for tag in agent.access["tags"]:
                 for channel in self.lvars:
@@ -75,10 +72,10 @@ class Simulation():
 
     def frameChangeHandler(self, scene):
         """Given to Blender to call whenever the scene moves to a new frame"""
-        if self.framelast+1 == sce.frame_current:
-            self.framelast = sce.frame_current
+        if self.framelast+1 == bpy.context.scene.frame_current:
+            self.framelast = bpy.context.scene.frame_current
             self.step(scene)
-        if self.framelast >= sce.frame_current:
+        if self.framelast >= bpy.context.scene.frame_current:
             if bpy.context.active_object.name in self.agents:
                 self.agents[bpy.context.active_object.name].highLight()
 

@@ -3,7 +3,6 @@ import random
 import functools
 
 import bpy
-sce = bpy.context.scene
 
 import mathutils
 
@@ -176,26 +175,6 @@ class State():
         # print("Moving to a new state:", self.name)
         self.currentFrame = 0
         self.isCurrent = True
-        """self.currentFrame = 0
-        self.isCurrent = True
-        act = self.settings["Action"]  # STRING
-        if act in self.tree.brain.sim.actions:
-            actionobj = self.tree.brain.sim.actions[act]  # from .iai_motion.py
-            obj = sce.objects[userid]  # bpy object
-            tr = obj.animation_data.nla_tracks.new()  # NLA track
-            action = actionobj.action  # bpy action
-            if action:
-                strip = tr.strips.new("", sce.frame_current, action)
-                strip.extrapolation = 'NOTHING'
-                strip.use_auto_blend = True
-            self.length = actionobj.length"""
-        """ tr = obj.animation_data.nla_tracks.new()  # NLA track
-            action = actionobj.motion
-            if action:
-                strip = tr.strips.new("", sce.frame_current, action)
-                strip.extrapolation = 'HOLD_FORWARD'
-                strip.use_auto_blend = False
-                strip.blend_type = 'ADD'"""
 
     def evaluate(self):
         """Called while all the neurons are being evaluated"""
@@ -250,7 +229,8 @@ class State():
         else:
             complete = self.currentFrame/self.length
             complete = 0.5 + complete/2
-        self.resultLog[sce.frame_current] = ((0.15, 0.4, complete))
+        sceneFrame = bpy.context.scene.frame_current
+        self.resultLog[sceneFrame] = ((0.15, 0.4, complete))
 
         if self.currentFrame < self.length - 1:
             return False, self.name
