@@ -363,6 +363,8 @@ class ActionState(StateNode):
 
     stateLength = IntProperty(default=1)
     cycleState = BoolProperty(default=False)
+    actionName = StringProperty(default="")
+    useValueOfSpeed = BoolProperty(default=True)
 
     def init(self, context):
         StateNode.init(self, context)
@@ -373,10 +375,15 @@ class ActionState(StateNode):
         item.settings["ValueDefault"] = val.defaultValueProperty
         item.length = self.stateLength
         item.cycleState = self.cycleState
+        item.actionName = self.actionName
+        item.useValueOfSpeed = self.useValueOfSpeed
 
     def draw_buttons(self, context, layout):
         layout.prop(self, "stateLength")
         layout.prop(self, "cycleState")
+        row = layout.row()
+        row.prop(self, "actionName", text="")
+        row.prop(self, "useValueOfSpeed", text="")
 
 
 class NoteNode(Node):

@@ -2,7 +2,15 @@ import bpy
 import math
 
 
-class action:
+class ActionManager:
+    def __init__(self):
+        self.currentActions = []
+
+    def registerAction(self, actionNode):
+        pass
+
+
+class Action:
     def __init__(self, name, actionname, motionname):
         """Both actions must be the same length and not contain scale"""
         A = bpy.data.actions
@@ -15,7 +23,7 @@ class action:
             arange = self.action.frame_range
             alen = arange[1] - arange[0] + 1
         else:
-            self.action = None  # So that other code can do - if action.action
+            self.action = None  # So that other code can do \- if action.action
             alen = 0
 
         self.motiondata = {}
@@ -46,5 +54,5 @@ def getmotions():
     sce = bpy.context.scene
     result = {}
     for m in sce.iai_actions.coll:
-        result[m.name] = action(m.name, m.action, m.motion)
+        result[m.name] = Action(m.name, m.action, m.motion)
     return result
