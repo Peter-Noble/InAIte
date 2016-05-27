@@ -2,6 +2,8 @@ import bpy
 from collections import OrderedDict
 
 import sys
+import time
+from .iai_debuggingMode import debugMode
 
 from . import iai_channels as chan
 wr = chan.Wrapper
@@ -30,6 +32,9 @@ class Simulation():
                       "Crowd": wr(Crowd),
                       "Ground": wr(Ground),
                       "Formation": wr(Formation)}
+        if debugMode:
+            self.totalTime = 0
+            self.totalFrames = 0
 
     def actions(self):
         """Set up the actions"""
@@ -53,6 +58,8 @@ class Simulation():
 
     def step(self, scene):
         """Called when the next frame is moved to"""
+        if debugMode:
+            t = time.time()
         print("NEWFRAME", bpy.context.scene.frame_current)
         for agent in self.agents.values():
             for tag in agent.access["tags"]:
@@ -68,6 +75,12 @@ class Simulation():
             a.apply()
         for chan in self.lvars.values():
             chan.newframe()
+        if debugMode:
+            newT = time.time()
+            print("time", newT - t)
+            self.totalTime += newT - t
+            self.totalFrames += 1
+            print("spf", self.totalTime/self.totalFrames)  # seconds per frame
 
     def frameChangeHandler(self, scene):
         """Given to Blender to call whenever the scene moves to a new frame"""
@@ -80,6 +93,9 @@ class Simulation():
 
     def startFrameHandler(self):
         """Add self.frameChangeHandler to the Blender event handlers"""
+        if debugMode:
+            self.totalTime = 0
+            self.totalFrames = 0
         print("Registering frame change handler")
         if self.frameChangeHandler in bpy.app.handlers.frame_change_pre:
             bpy.app.handlers.frame_change_pre.remove(self.frameChangeHandler)
