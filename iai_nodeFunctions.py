@@ -360,20 +360,21 @@ class StateAction(State):
         currentFrame = bpy.context.scene.frame_current
         self.resultLog[currentFrame] = ((0.15, 0.4, complete))
 
-        actionobj = self.brain.sim.actions[self.actionName]
+        if self.actionName in self.brain.sim.actions:
+            actionobj = self.brain.sim.actions[self.actionName]
 
-        for data_path, data in actionobj.motiondata.items():
-            x = data[0][self.currentFrame] - data[0][self.currentFrame - 1]
-            y = data[1][self.currentFrame] - data[1][self.currentFrame - 1]
-            z = data[2][self.currentFrame] - data[2][self.currentFrame - 1]
-            if data_path == "location":
-                self.brain.outvars["px"] += x
-                self.brain.outvars["py"] += y
-                self.brain.outvars["pz"] += z
-            elif data_path == "rotation_euler":
-                self.brain.outvars["rx"] += x
-                self.brain.outvars["ry"] += y
-                self.brain.outvars["rz"] += z
+            for data_path, data in actionobj.motiondata.items():
+                x = data[0][self.currentFrame] - data[0][self.currentFrame - 1]
+                y = data[1][self.currentFrame] - data[1][self.currentFrame - 1]
+                z = data[2][self.currentFrame] - data[2][self.currentFrame - 1]
+                if data_path == "location":
+                    self.brain.outvars["px"] += x
+                    self.brain.outvars["py"] += y
+                    self.brain.outvars["pz"] += z
+                elif data_path == "rotation_euler":
+                    self.brain.outvars["rx"] += x
+                    self.brain.outvars["ry"] += y
+                    self.brain.outvars["rz"] += z
 
         if self.currentFrame < self.length - 1:
             return False, self.name
