@@ -73,6 +73,8 @@ class Channel:
     def newFrame(self):
         """Called at the beginning of each new frame.
         (see def checkCalcd for description of how this is used)"""
+        objs = bpy.data.objects
+
         self.calcd = {}
         new = []
         for p in self.priority:
@@ -92,6 +94,8 @@ class Channel:
 
     def calculate(self):
         """Collect data and use clusterMatch to work out pairings"""
+        objs = bpy.data.objects
+
         agAccess = lambda x: (objs[x].location.x, objs[x].location.y,
                               objs[x].location.z)
         tgAccess = lambda x: (x.x, x.y, x.z)
@@ -135,6 +139,8 @@ class Channel:
     @property
     def dist(self):
         """Distance from this agent to the position in formation"""
+        objs = bpy.data.objects
+
         result = self.checkCalcd()
         if result:
             loc = objs[self.userid].location
@@ -146,6 +152,8 @@ class Channel:
     @property
     def rz(self):
         """Horizontal rotation to be pointing at position in formation"""
+        objs = bpy.data.objects
+
         to = self.checkCalcd()
         if to:
             ag = objs[self.userid]
@@ -166,6 +174,8 @@ class Channel:
     @property
     def rx(self):
         """Vertical rotation to be pointing at position in formation"""
+        objs = bpy.data.objects
+
         to = self.checkCalcd()
         if to:
             ag = objs[self.userid]
