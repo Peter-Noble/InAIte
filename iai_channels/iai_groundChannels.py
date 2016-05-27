@@ -39,6 +39,7 @@ class Ground(Mc):
                     if not (r[0] or r[1] or r[2]):
                         print(ag.id, "rotation must be applied")
                         # TODO make ray_cast work with rotation
+                    sce = bpy.context.scene
                     self.groundTrees[ag.id] = BVHTree.FromObject(gnd, sce)
                 point = s.location - gnd.location
                 calcd = self.groundTrees[ag.id].ray_cast(point, (0, 0, -1))
