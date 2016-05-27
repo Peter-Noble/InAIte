@@ -3,6 +3,8 @@ import math
 import mathutils
 Vector = mathutils.Vector
 
+from .libs import ins_octree as ot
+
 if __name__ != "__main__":
     import bpy
 
@@ -131,6 +133,8 @@ class Channel:
 
         self.predictNext = False
 
+        self.octree = None
+
     def register(self, objectid, val):
         """Add an object that emits sound"""
         self.emitters[objectid] = val
@@ -143,8 +147,46 @@ class Channel:
     def calculate(self):
         """Called the first time an agent uses this frequency"""
         O = bpy.context.scene.objects
-        
+
+        if self.octree is None:
+            bss = []  # List of bounding spheres
+            for emitterid, val in self.emitters.items():
+                dim = (val, val, val)
+                bss.append(ot.boundingSphereFromBPY(O[emitterid], dim))
+
+            self.octree = ot.createOctree(bss)
+
         ag = O[self.userid]
+
+        collisions = self.octree.checkPoint(ag.location.to_tuple())
+
+        for emitterid in collisions:
+            if emitterid == self.userid:
+                continue
+            to = O[emitterid]
+            val = self.emitters[emitterid]
+
+            difx = to.location.x - ag.location.x
+            dify = to.location.y - ag.location.y
+            difz = to.location.z - ag.location.z
+            dist = math.sqrt(difx**2 + dify**2 + difz**2)
+
+            target = to.location - ag.location
+
+            z = mathutils.Matrix.Rotation(ag.rotation_euler[2], 4, 'Z')
+            y = mathutils.Matrix.Rotation(ag.rotation_euler[1], 4, 'Y')
+            x = mathutils.Matrix.Rotation(ag.rotation_euler[0], 4, 'X')
+
+            rotation = x * y * z
+            relative = target * rotation
+
+            changez = math.atan2(relative[0], relative[1])/math.pi
+            changex = math.atan2(relative[2], relative[1])/math.pi
+            self.store[emitterid] = (changez, changex, 1-(dist/val), 1)
+            # (z rot, x rot, dist proportion, time until prediction)"""
+
+        # The old implementation not using octree
+        """ag = O[self.userid]
         for emitterid, val in self.emitters.items():
             if emitterid != self.userid:
                 to = O[emitterid]
@@ -166,7 +208,7 @@ class Channel:
                     changez = math.atan2(relative[0], relative[1])/math.pi
                     changex = math.atan2(relative[2], relative[1])/math.pi
                     self.store[emitterid] = (changez, changex, 1-(dist/val), 1)
-                    # (z rot, x rot, dist proportion, time until prediction)
+                    # (z rot, x rot, dist proportion, time until prediction)"""
 
     def calculatePrediction(self):
         """Called the first time an agent uses this frequency"""
