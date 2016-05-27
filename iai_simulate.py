@@ -13,7 +13,6 @@ from .iai_actions import getmotions
 class Simulation():
     """The object that contains everything once the simulation starts"""
     def __init__(self):
-        self.registered = False
         self.agents = {}
         self.framelast = 1
         self.compbrains = {}
@@ -82,14 +81,12 @@ class Simulation():
     def startFrameHandler(self):
         """Add self.frameChangeHandler to the Blender event handlers"""
         print("Registering frame change handler")
-        self.registered = True
-        if self.step in bpy.app.handlers.frame_change_pre:
+        if self.frameChangeHandler in bpy.app.handlers.frame_change_pre:
             bpy.app.handlers.frame_change_pre.remove(self.frameChangeHandler)
         bpy.app.handlers.frame_change_pre.append(self.frameChangeHandler)
 
     def stopFrameHandler(self):
         """Remove self.frameChangeHandler from Blenders event handlers"""
-        if self.registered:
+        if self.frameChangeHandler in bpy.app.handlers.frame_change_pre:
             print("Unregistering frame change handler")
             bpy.app.handlers.frame_change_pre.remove(self.frameChangeHandler)
-            self.registered = False
