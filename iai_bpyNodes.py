@@ -91,6 +91,9 @@ class LogicNode(InAIteNode):
         self.outputs.new('DefaultSocketType', "Output")
         self.outputs.new("DependanceSocketType", "Dependant")
 
+    def getSettings(self, node):
+        pass
+
 
 # ============ End of super classes ============
 
@@ -161,12 +164,15 @@ class AndNode(LogicNode):
     bl_label = "And"
 
     SingleOutput = BoolProperty(default=False)
+    IncludeAll = BoolProperty(default=True)
 
     def draw_buttons(self, context, layout):
         layout.prop(self, "SingleOutput")
+        layout.prop(self, "IncludeAll")
 
     def getSettings(self, node):
         node.settings["SingleOutput"] = self.SingleOutput
+        node.settings["IncludeAll"] = self.IncludeAll
 
 
 class OrNode(LogicNode):
@@ -180,6 +186,16 @@ class OrNode(LogicNode):
 
     def getSettings(self, node):
         node.settings["SingleOutput"] = self.SingleOutput
+
+
+class StrongNode(LogicNode):
+    """INAIte Strong node. Makes 1's and 0's stronger"""
+    bl_label = "Strong"
+
+
+class WeakNode(LogicNode):
+    """INAIte Weak node. Relaxes 1's and 0's"""
+    bl_label = "Weak"
 
 
 class QueryTagNode(LogicNode):
@@ -419,6 +435,8 @@ node_categories = [
         NodeItem("GraphNode"),
         NodeItem("AndNode"),
         NodeItem("OrNode"),
+        NodeItem("StrongNode"),
+        NodeItem("WeakNode"),
         NodeItem("MapNode"),
         NodeItem("OutputNode")
         ]),
@@ -456,6 +474,8 @@ def register():
     bpy.utils.register_class(GraphNode)
     bpy.utils.register_class(AndNode)
     bpy.utils.register_class(OrNode)
+    bpy.utils.register_class(StrongNode)
+    bpy.utils.register_class(WeakNode)
     bpy.utils.register_class(QueryTagNode)
     bpy.utils.register_class(SetTagNode)
     bpy.utils.register_class(VariableNode)
@@ -487,6 +507,8 @@ def unregister():
     bpy.utils.unregister_class(GraphNode)
     bpy.utils.unregister_class(AndNode)
     bpy.utils.unregister_class(OrNode)
+    bpy.utils.unregister_class(StrongNode)
+    bpy.utils.unregister_class(WeakNode)
     bpy.utils.unregister_class(QueryTagNode)
     bpy.utils.unregister_class(SetTagNode)
     bpy.utils.unregister_class(VariableNode)

@@ -76,20 +76,25 @@ class LogicAND(Neuron):
     """returns the values multiplied together"""
 
     def core(self, inps, settings):
+        results = {}
+        for into in inps:
+            for i in into:
+                if i.key in results:
+                    results[i.key] *= i.val
+                else:
+                    inAll = True
+                    if settings["IncludeAll"]:
+                        for intoB in inps:
+                            inAll &= i.key in intoB
+                    if inAll:
+                        results[i.key] = i.val
+
         if settings["SingleOutput"]:
             total = 1
-            for into in inps:
-                for i in into:
-                    total *= i.val
+            for k, v in results.items():
+                total *= v
             return {"None": total}
         else:
-            results = {}
-            for into in inps:
-                for i in into:
-                    if i.key in results:
-                        results[i.key] *= i.val
-                    else:
-                        results[i.key] = i.val
             return results
 
 
@@ -116,10 +121,35 @@ class LogicOR(Neuron):
             return results
 
 
+class LogicStrong(Neuron):
+    """Make 1's and 0's stronger"""
+    # https://www.desmos.com/calculator/izfhogpchr
+
+    def core(self, inps, settings):
+        results = {}
+        for into in inps:
+            for i in into:
+                results[i.key] = i.val**2 * (-2*i.val + 3)
+        return results
+
+
+class LogicWeak(Neuron):
+    """Make 1's and 0's stronger"""
+    # https://www.desmos.com/calculator/izfhogpchr
+
+    def core(self, inps, settings):
+        results = {}
+        for into in inps:
+            for i in into:
+                results[i.key] = 2*i.val - (i.val**2 * (-2*i.val + 3))
+        return results
+
+
 class LogicQUERYTAG(Neuron):
     """Return the value of Tag (normally 1) or else 0"""
 
     def core(self, inps, settings):
+        results = {}
         if settings["Tag"] in self.brain.tags:
             return self.brain.tags[settings["Tag"]]
         else:
@@ -302,6 +332,8 @@ logictypes = OrderedDict([
     ("GraphNode", LogicGRAPH),
     ("AndNode", LogicAND),
     ("OrNode", LogicOR),
+    ("StrongNode", LogicStrong),
+    ("WeakNode", LogicWeak),
     ("QueryTagNode", LogicQUERYTAG),
     ("SetTagNode", LogicSETTAG),
     ("VariableNode", LogicVARIABLE),
