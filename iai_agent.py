@@ -27,6 +27,11 @@ class Agent:
 
         objs = bpy.data.objects
 
+        """Set the dimensions of this object"""
+        self.dimensions = objs[blenderid].dimensions
+        self.radius = max(self.dimensions) / 2
+        # TODO allow the user to specify a bounding geometry
+
         """ar - absolute rot, r - change rot by, rs - rot speed"""
         self.arx = objs[blenderid].rotation_euler[0]
         self.rx = 0
