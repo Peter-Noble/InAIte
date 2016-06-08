@@ -327,29 +327,102 @@ if __name__ == "__main__":
     for ob in bpy.context.scene.objects:
         bbs.append(boundingBoxFromBPY(ob))
     """
-    bbs = []
-    for ob in bpy.context.scene.objects:
-        bbs.append(boundingSphereFromBPY(ob))
 
     import time
-    t = time.time()
-    for f in range(10):
-        O = createOctree(bbs)
-    #print("Time to construct quad tree", time.time() - t)
-    print(time.time() - t)
-    # E = bpy.context.scene.objects["Empty"]
-    # pos = (E.location.x, E.location.y, E.loxcation.z)
     import random
-    pos = [(random.random()*100-50, random.random()*100-50, random.random()*100-50) for x in range(10000)]
-    t = time.time()
-    for f in range(10000):
-        O.checkPoint(pos[f])
-    #print("Time to check 1000 points", time.time() - t)
-    print(time.time() - t)
-    # AO.printTree()
-    t = time.time()
-    for f in range(10):
-        O.checkCollisions()
-    #print("Time to find all boundingbox collision:", time.time() - t)
-    print(time.time() - t)
-    print(len(O.checkCollisions()))
+    
+    constructTime = []
+    check100Time = []
+    checkNTime = []
+    checkAllCollisions = []
+    
+    bruteContructTime = []
+    bruteCheck100Time = []
+    bruteCheckNTime = []
+    bruteCheckAllCollisions = []
+    
+    for i in range(21):
+        n = i*400
+        t = time.time()
+        for f in range(5):
+            bbs = []
+            for ob in bpy.context.scene.objects[:n]:
+                bbs.append(boundingSphereFromBPY(ob))
+            O = createOctree(bbs)
+        constructTime.append((time.time() - t)/5)
+            
+        pos = [(random.random()*100-50, random.random()*100-50, random.random()*100-50) for x in range(10000)]
+        # Done so that the random number generation time isn't included in the timings.
+        t = time.time()
+        for f in range(10000):
+            O.checkPoint(pos[f])
+        check100Time.append(((time.time() - t)))
+        
+        t = time.time()
+        for f in range(n):
+            O.checkPoint(pos[f])
+        checkNTime.append(time.time() - t)
+        
+        t = time.time()
+        for f in range(5):
+            O.checkCollisions()
+        checkAllCollisions.append((time.time() - t)/5)
+
+        # The following do the same as above without the octree. It is not advised that you run them
+        #    for any large n (n>3000) since they take increasingly long to complete.
+        """t = time.time()
+        bbs = []
+        for ob in bpy.context.scene.objects[:n]:
+            bbs.append(boundingSphereFromBPY(ob))
+        bruteContructTime.append(time.time() - t)
+        
+        pos = [(random.random()*100-50, random.random()*100-50, random.random()*100-50) for x in range(10000)]
+        t = time.time()
+        result = []
+        for p in pos:
+            for b in bbs:
+                if b.checkPoint(p):
+                    result.append(b.original)
+        bruteCheck100Time.append(time.time() - t)
+        
+        t = time.time()
+        result = []
+        for f in range(n):
+            p = pos[f]
+            for b in bbs:
+                if b.checkPoint(p):
+                    result.append(b.original)
+        bruteCheckNTime.append(time.time() - t)
+        
+        t = time.time()
+        result = {}
+        for a in bbs:
+            for b in bbs:
+                if a.checkCollisionWithBB(b):
+                    result[a.original] = b.original
+        bruteCheckAllCollisions.append(time.time() - t)"""
+            
+    print("Construct time:")
+    for f in constructTime:
+        print(f)    
+    print("Check 10000 time:")
+    for f in check100Time:
+        print(f)    
+    print("Check N time")
+    for f in checkNTime:
+        print(f)    
+    print("Check all collisions time:")
+    for f in checkAllCollisions:
+        print(f)
+    print("Brute construction time:")
+    for f in bruteContructTime:
+        print(f)
+    print("Brute check 10000 time:")
+    for f in bruteCheck100Time:
+        print(f)
+    print("Brute check N time:")
+    for f in bruteCheckNTime:
+        print(f)
+    print("Brute check all collisions:")
+    for f in bruteCheckAllCollisions:
+        print(f)
