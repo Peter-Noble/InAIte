@@ -26,9 +26,10 @@ class ImpulseContainer():
 
     def __getitem__(self, key):
         if key in self.cont:
-            if not isinstance(self.cont[key], Impulse):
-                print("NOT IMPULSE IN CONTAINER")
-            return self.cont[key]
+            if isinstance(self.cont[key], Impulse):
+                return self.cont[key]
+            else:
+                return Impulse((key, self.cont[key]))
 
     def __iter__(self):
         return iter([Impulse(x) for x in self.cont.items()])
