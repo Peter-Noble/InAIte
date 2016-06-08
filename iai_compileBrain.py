@@ -17,6 +17,18 @@ def getInputs(inp):
     return result
 
 
+def getMultiInputs(inputs):
+    result = []
+    for inp in inputs:
+        for link in inp.links:
+            fr = link.from_node
+            if fr.bl_idname == "NodeReroute":
+                result += getInputs(fr.inputs[0])
+            else:
+                result += [fr.name]
+    return result
+
+
 def getOutputs(out):
     result = []
     for link in out.links:
@@ -38,7 +50,10 @@ def compileBrain(nodeGroup, sim, userid):
             # node.bl_idname  -  The type
             item = logictypes[node.bl_idname](result, node)
             node.getSettings(item)
-            item.inputs = getInputs(node.inputs["Input"])
+            if node.bl_idname == "PriorityNode":
+                item.inputs = getMultiInputs(node.inputs)
+            else:
+                item.inputs = getInputs(node.inputs["Input"])
             item.dependantOn = getOutputs(node.outputs["Dependant"])
             if not node.outputs["Output"].is_linked:
                 result.outputs.append(node.name)

@@ -337,6 +337,40 @@ class PrintNode(LogicNode):
         node.settings["Label"] = self.Label
 
 
+class PriorityNode(LogicNode):
+    """InAIte Priority node"""
+    bl_label = "Priority"
+
+    defaultValue = bpy.props.FloatProperty(default=0)
+
+    def init(self, context):
+        self.inputs.new("DefaultSocketType", "Values0")
+        self.inputs.new("DefaultSocketType", "Priority0")
+
+        self.outputs.new('DefaultSocketType', "Output")
+        self.outputs.new("DependanceSocketType", "Dependant")
+
+    def update(self):
+        if self.inputs[-1].is_linked and self.inputs[-2].is_linked:
+            n = len(self.inputs)//2
+            self.inputs.new("DefaultSocketType", "Values{}".format(n))
+            self.inputs.new("DefaultSocketType", "Priority{}".format(n))
+
+            self.inputs[-1].link_limit = 1
+            self.inputs[-2].link_limit = 1
+        elif len(self.inputs) > 2 and not (self.inputs[-1].is_linked or
+                                           self.inputs[-2].is_linked):
+            while (not self.inputs[-4].is_linked and
+                   not self.inputs[-3].is_linked and len(self.inputs) > 2):
+                self.inputs.remove(self.inputs[-1])
+                self.inputs.remove(self.inputs[-1])
+
+    def draw_buttons(self, context, layout):
+        layout.prop(self, "defaultValue")
+
+    def getSettings(self, node):
+        node.settings["defaultValue"] = self.defaultValue
+
 # ============ Start of state nodes ============
 
 
@@ -438,7 +472,8 @@ node_categories = [
         NodeItem("StrongNode"),
         NodeItem("WeakNode"),
         NodeItem("MapNode"),
-        NodeItem("OutputNode")
+        NodeItem("OutputNode"),
+        NodeItem("PriorityNode")
         ]),
     MyNodeCategory("STATE", "State", items=[
         NodeItem("StartState"),
@@ -481,6 +516,7 @@ def register():
     bpy.utils.register_class(VariableNode)
     bpy.utils.register_class(MapNode)
     bpy.utils.register_class(OutputNode)
+    bpy.utils.register_class(PriorityNode)
     bpy.utils.register_class(EventNode)
     bpy.utils.register_class(PythonNode)
     bpy.utils.register_class(PrintNode)
@@ -514,6 +550,7 @@ def unregister():
     bpy.utils.unregister_class(VariableNode)
     bpy.utils.unregister_class(MapNode)
     bpy.utils.unregister_class(OutputNode)
+    bpy.utils.unregister_class(PriorityNode)
     bpy.utils.unregister_class(EventNode)
     bpy.utils.unregister_class(PythonNode)
     bpy.utils.unregister_class(PrintNode)

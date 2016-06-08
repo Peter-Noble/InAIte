@@ -261,6 +261,34 @@ class LogicOUTPUT(Neuron):
         return out
 
 
+class LogicPRIORITY(Neuron):
+    """Combine inputs by priority"""
+
+    def core(self, inps, settings):
+        result = {}
+        remaining = {}
+        for v in range(len(inps)//2):
+            into = inps[2*v]
+            print("into", into)
+            priority = inps[2*v+1]
+            print("priority", priority)
+            for i in into:
+                if i.key in priority:
+                    # TODO what if priority[i.key] < 0?
+                    if i.key in result:
+                        contribution = priority[i.key].val * remaining[i.key]
+                        result[i.key] += i.val * contribution
+                        remaining[i.key] -= contribution
+                    else:
+                        result[i.key] = i.val * priority[i.key].val
+                        remaining[i.key] = 1 - priority[i.key].val
+            print("resultPartial", result)
+        for key, rem in remaining.items():
+            if rem != 0:
+                result[key] += settings["defaultValue"] * rem
+        return result
+
+
 class LogicEVENT(Neuron):
     """Check if an event is happening that frame"""
 
@@ -339,6 +367,7 @@ logictypes = OrderedDict([
     ("VariableNode", LogicVARIABLE),
     ("MapNode", LogicMAP),
     ("OutputNode", LogicOUTPUT),
+    ("PriorityNode", LogicPRIORITY),
     ("EventNode", LogicEVENT),
     ("PythonNode", LogicPYTHON),
     ("PrintNode", LogicPRINT)
