@@ -267,11 +267,16 @@ class LogicPRIORITY(Neuron):
     def core(self, inps, settings):
         result = {}
         remaining = {}
-        for v in range(len(inps)//2):
+        for v in range((len(inps)+1)//2):
             into = inps[2*v]
-            print("into", into)
-            priority = inps[2*v+1]
-            print("priority", priority)
+            # print("into", into)
+            if 2*v+1 < len(inps):
+                priority = inps[2*v+1]
+                usesPriority = True
+            else:
+                priority = []
+                usesPriority = False
+            # print("priority", priority)
             for i in into:
                 if i.key in priority:
                     # TODO what if priority[i.key] < 0?
@@ -282,7 +287,15 @@ class LogicPRIORITY(Neuron):
                     else:
                         result[i.key] = i.val * priority[i.key].val
                         remaining[i.key] = 1 - priority[i.key].val
-            print("resultPartial", result)
+                elif not usesPriority:
+                    if i.key in result:
+                        contribution = remaining[i.key]
+                        result[i.key] += i.val * contribution
+                        remaining[i.key] -= 0
+                    else:
+                        result[i.key] = i.val
+                        remaining[i.key] = 0
+            #print("resultPartial", result)
         for key, rem in remaining.items():
             if rem != 0:
                 result[key] += settings["defaultValue"] * rem

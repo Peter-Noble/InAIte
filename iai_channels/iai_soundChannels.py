@@ -133,6 +133,7 @@ class Channel:
         self.storeSteering = {}
 
         self.predictNext = False
+        self.steeringNext = False
 
         self.octree = None
 
